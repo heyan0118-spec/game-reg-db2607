@@ -1,0 +1,2753 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>글로벌 게임 규제 데이터베이스 v2.3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface2: #f8f9fb;
+    --border: #dde1e8;
+    --border-light: #eef0f4;
+    --accent: #1756c8;
+    --accent-hover: #0f42a0;
+    --accent-light: #e8edf8;
+    --warn: #d97706;
+    --warn-light: #fef3c7;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --ok: #16a34a;
+    --ok-light: #f0fdf4;
+    --text: #1a1f2e;
+    --text-dim: #4b5675;
+    --text-muted: #8b96b0;
+    --header-bg: #1756c8;
+    --sidebar-bg: #ffffff;
+    --tag-bg: #f1f3f8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--header-bg);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(23,86,200,0.18);
+  }
+
+  .logo { display: flex; align-items: center; gap: 14px; }
+
+  .logo-badge {
+    background: #fff;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+
+  .logo-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+
+  .header-meta {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+  }
+  .header-meta span { color: #fff; font-weight: 500; }
+
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 0 12px;
+    height: 36px;
+    min-width: 300px;
+    transition: background 0.15s;
+  }
+  .search-wrap:focus-within {
+    background: rgba(255,255,255,0.25);
+    border-color: rgba(255,255,255,0.6);
+  }
+  .search-wrap input {
+    background: none; border: none; outline: none;
+    color: #fff; font-family: inherit; font-size: 13px; width: 100%;
+  }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.6); }
+  .search-icon { color: rgba(255,255,255,0.7); font-size: 14px; flex-shrink: 0; }
+  .search-clear { color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; display: none; }
+  .search-clear:hover { color: #fff; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+
+  .sidebar-section { padding: 0 16px; margin-bottom: 20px; }
+
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding: 0 4px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .region-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 9px 10px;
+    background: none; border: none; border-radius: 6px;
+    cursor: pointer; text-align: left;
+    transition: all 0.12s; margin-bottom: 2px;
+    font-family: inherit;
+  }
+  .region-btn:hover { background: var(--accent-light); }
+  .region-btn.active { background: var(--accent-light); border-left: 3px solid var(--accent); padding-left: 7px; }
+
+  .region-flag { font-size: 17px; line-height: 1; flex-shrink: 0; }
+  .region-info { flex: 1; }
+  .region-name { font-size: 13px; font-weight: 500; color: var(--text); display: block; }
+  .region-btn.active .region-name { color: var(--accent); font-weight: 700; }
+  .risk-count { font-size: 11px; color: var(--text-muted); }
+
+  .risk-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .risk-dot.HIGH { background: var(--danger); }
+  .risk-dot.MED { background: var(--warn); }
+  .risk-dot.LOW { background: var(--ok); }
+
+  /* ── SIDEBAR PLANNER BTN ── */
+  .sidebar-planner-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 9px 10px;
+    background: var(--accent-light);
+    border: 1px solid #c5d4f0;
+    border-radius: 6px;
+    cursor: pointer; text-align: left;
+    transition: all 0.12s; margin-bottom: 2px;
+    font-family: inherit;
+  }
+  .sidebar-planner-btn:hover { background: #dce7f8; }
+  .sidebar-planner-btn.active { background: var(--accent); border-color: var(--accent); }
+  .sidebar-planner-btn.active .region-name { color: #fff; }
+
+  /* ── MAIN ── */
+  main { padding: 28px 32px; overflow-y: auto; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── PAGE TITLE ── */
+  .page-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .page-headline {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    margin-bottom: 6px; letter-spacing: -0.5px;
+  }
+  .page-desc {
+    font-size: 13px; color: var(--text-dim);
+    line-height: 1.7; margin-bottom: 24px; max-width: 640px;
+  }
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-muted);
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+  }
+  .breadcrumb span { color: var(--text-dim); }
+  .breadcrumb-sep { color: var(--border); }
+
+  /* ── OVERVIEW GRID ── */
+  .overview-grid {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 14px; margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .stat-card.danger::before { background: var(--danger); }
+  .stat-card.warn::before { background: var(--warn); }
+  .stat-card.ok::before { background: var(--ok); }
+
+  .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+  .stat-card.danger .stat-value { color: var(--danger); }
+  .stat-card.warn .stat-value { color: var(--warn); }
+  .stat-card.ok .stat-value { color: var(--ok); }
+  .stat-sub { font-size: 12px; color: var(--text-dim); }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 12px 16px; margin-bottom: 14px;
+    border-radius: 6px; border-left: 4px solid;
+    font-size: 13px; line-height: 1.6;
+  }
+  .alert.danger { border-color: var(--danger); background: var(--danger-light); color: #7f1d1d; }
+  .alert.warn { border-color: var(--warn); background: var(--warn-light); color: #78350f; }
+  .alert.info { border-color: var(--accent); background: var(--accent-light); color: #1e3a8a; }
+  .alert strong { font-weight: 700; display: block; margin-bottom: 3px; color: inherit; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-light);
+  }
+  .section-flag { font-size: 30px; line-height: 1; }
+  .section-title { font-size: 20px; font-weight: 700; color: var(--text); }
+  .section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .risk-badge {
+    margin-left: auto; padding: 5px 12px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; border-radius: 3px;
+  }
+  .risk-badge.HIGH { background: var(--danger-light); color: var(--danger); border: 1px solid #fca5a5; }
+  .risk-badge.MED { background: var(--warn-light); color: var(--warn); border: 1px solid #fcd34d; }
+  .risk-badge.LOW { background: var(--ok-light); color: var(--ok); border: 1px solid #86efac; }
+
+  /* ── REG CARD ── */
+  .reg-grid { display: grid; gap: 12px; }
+
+  .reg-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .reg-card:hover { border-color: #bfd0ef; box-shadow: 0 2px 12px rgba(23,86,200,0.08); }
+
+  .reg-card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer; user-select: none;
+  }
+
+  .reg-severity { width: 4px; align-self: stretch; flex-shrink: 0; border-radius: 2px; }
+  .reg-severity.HIGH { background: var(--danger); }
+  .reg-severity.MED { background: var(--warn); }
+  .reg-severity.LOW { background: var(--ok); }
+  .reg-severity.INFO { background: var(--accent); }
+
+  .reg-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .reg-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 0.5px;
+  }
+  .reg-tag.mandatory { background: #fef2f2; color: var(--danger); border: 1px solid #fca5a5; }
+  .reg-tag.advisory { background: var(--warn-light); color: var(--warn); border: 1px solid #fcd34d; }
+  .reg-tag.watch { background: var(--accent-light); color: var(--accent); border: 1px solid #bfdbfe; }
+  .reg-tag.new { background: var(--ok-light); color: var(--ok); border: 1px solid #86efac; }
+
+  .reg-toggle { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
+  .reg-card.open .reg-toggle { transform: rotate(180deg); }
+
+  .reg-body { display: none; padding: 16px; }
+  .reg-card.open .reg-body { display: block; }
+
+  .reg-desc { font-size: 13px; line-height: 1.7; color: var(--text-dim); margin-bottom: 14px; }
+
+  .reg-meta-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 14px; }
+
+  .reg-meta-item {
+    background: var(--surface2);
+    border: 1px solid var(--border-light);
+    border-radius: 6px; padding: 10px 12px;
+  }
+  .reg-meta-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .reg-meta-value { font-size: 12px; color: var(--text); font-weight: 500; }
+
+  .action-list {
+    list-style: none;
+    border: 1px solid #c5d4f0;
+    background: var(--accent-light);
+    padding: 12px 16px;
+    border-radius: 6px;
+  }
+  .action-list li {
+    font-size: 12px; color: #1e3a8a; padding: 3px 0;
+    padding-left: 14px; position: relative; line-height: 1.6;
+  }
+  .action-list li::before { content:'›'; position:absolute; left:0; color: var(--accent); font-weight: 700; }
+  .action-header { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+
+  /* ── OVERVIEW TABLE ── */
+  .overview-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 20px; }
+  .overview-table th {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--text-dim); text-transform: uppercase;
+    padding: 10px 14px; text-align: left;
+    background: var(--surface2);
+    border-bottom: 2px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+  .overview-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); color: var(--text); }
+  .overview-table tr:hover td { background: var(--accent-light); cursor: pointer; }
+
+  .risk-pill {
+    display: inline-block; padding: 2px 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px; border-radius: 3px;
+  }
+  .risk-pill.HIGH { background: var(--danger-light); color: var(--danger); }
+  .risk-pill.MED { background: var(--warn-light); color: var(--warn); }
+  .risk-pill.LOW { background: var(--ok-light); color: var(--ok); }
+
+  .cell-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .mini-tag {
+    font-size: 10px; padding: 2px 7px;
+    background: var(--tag-bg); color: var(--text-dim);
+    border: 1px solid var(--border-light); border-radius: 3px; white-space: nowrap;
+  }
+  .mini-tag.red { background: #fef2f2; color: var(--danger); border-color: #fca5a5; }
+  .mini-tag.yellow { background: var(--warn-light); color: var(--warn); border-color: #fcd34d; }
+  .mini-tag.blue { background: var(--accent-light); color: var(--accent); border-color: #bfdbfe; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* ── REF LINKS ── */
+  .ref-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); }
+  .ref-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px; color: var(--text-dim); text-decoration: none;
+    transition: all 0.12s;
+  }
+  .ref-link:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .ref-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filter-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+  .filter-chip {
+    padding: 4px 12px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim);
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    border-radius: 20px; transition: all 0.12s;
+  }
+  .filter-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .filter-chip.danger-chip.active { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .filter-chip.warn-chip.active { background: var(--warn); border-color: var(--warn); color: #fff; }
+  .filter-chip.ok-chip.active { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+  /* ── SEARCH RESULT ── */
+  .search-result-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
+  .search-result-meta span { color: var(--accent); font-weight: 700; }
+  .search-region-tag { font-size: 10px; padding: 2px 8px; background: var(--accent-light); color: var(--accent); border: 1px solid #bfdbfe; border-radius: 3px; margin-left: 8px; font-weight: 700; }
+  mark { background: #fef9c3; color: #713f12; border-radius: 2px; padding: 0 2px; }
+
+  /* ── PLANNER ── */
+  .planner-step-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .planner-section { margin-bottom: 24px; }
+  .country-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .c-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim);
+    font-size: 13px; cursor: pointer; border-radius: 20px;
+    transition: all 0.12s; user-select: none; font-family: inherit;
+  }
+  .c-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .c-chip.on { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 700; }
+  .feat-chip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 8px; }
+  .f-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim);
+    font-size: 13px; cursor: pointer; border-radius: 6px;
+    transition: all 0.12s; user-select: none; font-family: inherit;
+  }
+  .f-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .f-chip.on { border-color: var(--accent); background: var(--accent); color: #fff; font-weight: 700; }
+  .planner-result { border-top: 1px solid var(--border); padding-top: 20px; }
+  .planner-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+  .p-stat { background: var(--surface); border: 1px solid var(--border); padding: 14px; text-align: center; border-radius: 8px; }
+  .p-stat-num { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .p-stat-num.H { color: var(--danger); }
+  .p-stat-num.M { color: var(--warn); }
+  .p-stat-num.L { color: var(--ok); }
+  .p-stat-lbl { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .planner-region-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin: 16px 0 8px; }
+  .p-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; border: 2px dashed var(--border); border-radius: 8px; }
+  .p-empty-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #bbc3d4; }
+
+  /* ── CHECK BUTTONS ── */
+  .reg-card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    align-items: center;
+  }
+  .reg-title { flex: 1; min-width: 0; }
+
+  .check-btns {
+    display: flex; gap: 5px; align-items: center;
+    flex-shrink: 0;
+  }
+  .chk-btn {
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    border-radius: 14px; cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-muted);
+    font-family: inherit; transition: all 0.12s; white-space: nowrap;
+    line-height: 1.4;
+  }
+  .chk-btn:hover { opacity: 0.85; }
+  .chk-btn.applicable:hover { border-color: #9ca3af; color: #374151; background: #f3f4f6; }
+  .chk-btn.review:hover { border-color: var(--warn); color: var(--warn); background: var(--warn-light); }
+  .chk-btn.done:hover { border-color: var(--ok); color: var(--ok); background: var(--ok-light); }
+
+  /* 선택된 상태 */
+  .chk-btn.applicable.selected { background: #f3f4f6; border-color: #9ca3af; color: #374151; font-weight: 700; }
+  .chk-btn.review.selected { background: var(--warn-light); border-color: var(--warn); color: var(--warn); font-weight: 700; }
+  .chk-btn.done.selected { background: var(--ok-light); border-color: var(--ok); color: var(--ok); font-weight: 700; }
+
+  /* 카드 상태별 왼쪽 테두리 강조 */
+  .reg-card.status-applicable { border-left: 4px solid #9ca3af; }
+  .reg-card.status-review { border-left: 4px solid var(--warn); }
+  .reg-card.status-done { border-left: 4px solid var(--ok); }
+  .reg-card.status-done .reg-card-header { background: #f0fdf4; }
+  .reg-card.status-review .reg-card-header { background: #fffbeb; }
+  .reg-card.status-applicable .reg-card-header { background: #f9fafb; }
+
+  /* 상태 뱃지 */
+  .status-badge {
+    display: none; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+  }
+  .status-badge.applicable { display: inline-flex; align-items: center; gap: 3px; background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+  .status-badge.review { display: inline-flex; align-items: center; gap: 3px; background: var(--warn-light); color: var(--warn); border: 1px solid #fcd34d; }
+  .status-badge.done { display: inline-flex; align-items: center; gap: 3px; background: var(--ok-light); color: var(--ok); border: 1px solid #86efac; }
+
+  /* 진행 현황 바 */
+  .progress-bar-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+  }
+  .progress-bar-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .progress-bar-title span { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .progress-track { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; display: flex; }
+  .progress-seg { height: 100%; transition: width 0.4s ease; }
+  .progress-seg.done { background: var(--ok); }
+  .progress-seg.review { background: var(--warn); }
+  .progress-seg.applicable { background: #9ca3af; }
+  .progress-legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .progress-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); }
+  .progress-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .progress-counts { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 12px; }
+  .progress-count-item { background: var(--surface2); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; text-align: center; }
+  .progress-count-num { font-size: 20px; font-weight: 700; line-height: 1; margin-bottom: 3px; }
+  .progress-count-num.done { color: var(--ok); }
+  .progress-count-num.review { color: var(--warn); }
+  .progress-count-num.applicable { color: #6b7280; }
+  .progress-count-num.unchecked { color: var(--text-muted); }
+  .progress-count-lbl { font-size: 11px; color: var(--text-muted); }
+
+  .check-btns { display:flex; gap:5px; align-items:center; flex-shrink:0; margin-left:4px; }
+  .chk-btn { padding:3px 9px; font-size:11px; font-weight:600; border-radius:12px; cursor:pointer; border:1px solid #dde1e8; background:#f8f9fb; color:#8b96b0; font-family:inherit; white-space:nowrap; }
+  .chk-btn.applicable.selected { background:#f3f4f6; border-color:#9ca3af; color:#374151; }
+  .chk-btn.review.selected { background:#fef3c7; border-color:#d97706; color:#d97706; }
+  .chk-btn.done.selected { background:#f0fdf4; border-color:#16a34a; color:#16a34a; }
+  .reg-card.status-applicable .reg-card-header { background:#f9fafb; border-left:3px solid #9ca3af; }
+  .reg-card.status-review .reg-card-header { background:#fffbeb; border-left:3px solid #d97706; }
+  .reg-card.status-done .reg-card-header { background:#f0fdf4; border-left:3px solid #16a34a; }
+  .status-badge { display:none; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; flex-shrink:0; }
+  .status-badge.applicable { display:inline-flex; background:#f3f4f6; color:#6b7280; border:1px solid #d1d5db; }
+  .status-badge.review { display:inline-flex; background:#fef3c7; color:#d97706; border:1px solid #fcd34d; }
+  .status-badge.done { display:inline-flex; background:#f0fdf4; color:#16a34a; border:1px solid #86efac; }
+  .progress-wrap { background:#fff; border:1px solid #dde1e8; border-radius:8px; padding:16px 20px; margin-bottom:20px; }
+  .progress-title { font-size:13px; font-weight:700; color:#1a1f2e; margin-bottom:10px; display:flex; justify-content:space-between; }
+  .progress-title span { font-size:12px; font-weight:400; color:#8b96b0; }
+  .progress-track { height:10px; background:#e5e7eb; border-radius:5px; overflow:hidden; display:flex; }
+  .progress-seg { height:100%; transition:width 0.3s; }
+  .progress-seg.done { background:#16a34a; }
+  .progress-seg.review { background:#d97706; }
+  .progress-seg.applicable { background:#9ca3af; }
+  .progress-counts { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
+  .progress-count-item { background:#f8f9fb; border:1px solid #eef0f4; border-radius:6px; padding:8px; text-align:center; }
+  .progress-count-num { font-size:20px; font-weight:700; line-height:1; margin-bottom:3px; }
+  .progress-count-num.done { color:#16a34a; }
+  .progress-count-num.review { color:#d97706; }
+  .progress-count-num.applicable { color:#6b7280; }
+  .progress-count-num.unchecked { color:#8b96b0; }
+  .progress-count-lbl { font-size:11px; color:#8b96b0; }
+  .add-card-btn { display:flex; align-items:center; gap:8px; width:100%; padding:12px 16px; margin-top:20px; border:2px dashed #dde1e8; border-radius:8px; background:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:#8b96b0; transition:all 0.15s; }
+  .add-card-btn:hover { border-color:#1756c8; color:#1756c8; background:#e8edf8; }
+  .user-card-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:3px; background:#fef9c3; color:#854d0e; border:1px solid #fde047; flex-shrink:0; }
+
+
+  /* BUILT-IN CARD EDIT BAR */
+  .card-edit-bar {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 6px; margin-top: 14px; padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+  }
+  .card-edit-btn {
+    padding: 4px 12px; font-size: 11px; font-weight: 600;
+    border-radius: 4px; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-dim); transition: all 0.12s;
+  }
+  .card-edit-btn:hover { border-color: #1756c8; color: #1756c8; background: #e8edf8; }
+  .card-del-btn {
+    padding: 4px 12px; font-size: 11px; font-weight: 600;
+    border-radius: 4px; cursor: pointer; font-family: inherit;
+    border: 1px solid #fca5a5; background: #fef2f2;
+    color: #dc2626; transition: all 0.12s;
+  }
+  .card-del-btn:hover { background: #dc2626; color: #fff; }
+  .reg-card.card-hidden { display: none; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-badge">v2.3</div>
+    <div class="logo-title">글로벌 게임 규제 데이터베이스</div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="globalSearch" placeholder="규제명, 키워드 검색... (예: 루트박스, GDPR, 미성년자)" oninput="handleSearch(this.value)" />
+    <span class="search-clear" id="searchClear" onclick="clearSearch()">✕</span>
+  </div>
+  <div class="header-meta">
+    PC 온라인게임 기준 &nbsp;|&nbsp; 업데이트 <span>2026.07</span> &nbsp;|&nbsp; 6개 지역 커버
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <button class="region-btn active" onclick="showPage('overview')">
+        <span class="region-flag">🌐</span>
+        <div class="region-info">
+          <span class="region-name">전체 개요</span>
+        </div>
+      </button>
+      <button class="sidebar-planner-btn" onclick="showPage('planner')">
+        <span class="region-flag">🚀</span>
+        <div class="region-info">
+          <span class="region-name">론칭 리스크 플래너</span>
+        </div>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">아시아 · 동북</div>
+
+      <button class="region-btn" onclick="showPage('kr')">
+        <span class="region-flag">🇰🇷</span>
+        <div class="region-info">
+          <span class="region-name">대한민국</span>
+        </div>
+        <span class="risk-count">5개 규제</span>
+        <span class="risk-dot HIGH"></span>
+      </button>
+
+      <button class="region-btn" onclick="showPage('cn')">
+        <span class="region-flag">🇨🇳</span>
+        <div class="region-info">
+          <span class="region-name">중국</span>
+        </div>
+        <span class="risk-count">6개 규제</span>
+        <span class="risk-dot HIGH"></span>
+      </button>
+
+      <button class="region-btn" onclick="showPage('jp')">
+        <span class="region-flag">🇯🇵</span>
+        <div class="region-info">
+          <span class="region-name">일본</span>
+        </div>
+        <span class="risk-count">5개 규제</span>
+        <span class="risk-dot MED"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">아시아 · 동남</div>
+
+      <button class="region-btn" onclick="showPage('sea')">
+        <span class="region-flag">🌏</span>
+        <div class="region-info">
+          <span class="region-name">동남아 (SEA)</span>
+        </div>
+        <span class="risk-count">7개 규제</span>
+        <span class="risk-dot HIGH"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">서구권</div>
+
+      <button class="region-btn" onclick="showPage('eu')">
+        <span class="region-flag">🇪🇺</span>
+        <div class="region-info">
+          <span class="region-name">유럽 (EU/UK)</span>
+        </div>
+        <span class="risk-count">6개 규제</span>
+        <span class="risk-dot HIGH"></span>
+      </button>
+
+      <button class="region-btn" onclick="showPage('na')">
+        <span class="region-flag">🇺🇸</span>
+        <div class="region-info">
+          <span class="region-name">북미 (US/CA)</span>
+        </div>
+        <span class="risk-count">4개 규제</span>
+        <span class="risk-dot LOW"></span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- ═══════════════ SEARCH RESULT PAGE ═══════════════ -->
+    <div id="page-search" class="page">
+      <div class="page-title">SEARCH</div>
+      <div class="page-headline" id="searchHeadline">검색 결과</div>
+      <div class="search-result-meta" id="searchMeta"></div>
+      <div id="searchResults"></div>
+    </div>
+
+    <!-- ═══════════════ PLANNER PAGE ═══════════════ -->
+    <div id="page-planner" class="page">
+      <div class="breadcrumb">홈 <span class="breadcrumb-sep">›</span> <span>론칭 리스크 플래너</span></div>
+      <div class="page-title">LAUNCH RISK PLANNER</div>
+      <div class="page-headline">론칭 리스크 플래너</div>
+      <div class="page-desc">론칭 국가와 게임 기능을 선택하면 해당되는 규제만 추려드려요. A게임(글로벌)과 B게임(아시아)처럼 프로젝트별로 조합해서 사용하세요.</div>
+
+      <div class="planner-section">
+        <div class="planner-step-label">STEP 1 — 론칭 국가 선택 (복수 선택 가능)</div>
+        <div class="country-chip-grid">
+          <div class="c-chip" data-c="kr" onclick="plannerToggle(this,'c')">🇰🇷 한국</div>
+          <div class="c-chip" data-c="cn" onclick="plannerToggle(this,'c')">🇨🇳 중국</div>
+          <div class="c-chip" data-c="jp" onclick="plannerToggle(this,'c')">🇯🇵 일본</div>
+          <div class="c-chip" data-c="id" onclick="plannerToggle(this,'c')">🇮🇩 인도네시아</div>
+          <div class="c-chip" data-c="vn" onclick="plannerToggle(this,'c')">🇻🇳 베트남</div>
+          <div class="c-chip" data-c="sg" onclick="plannerToggle(this,'c')">🇸🇬 싱가포르</div>
+          <div class="c-chip" data-c="eu" onclick="plannerToggle(this,'c')">🇪🇺 유럽 (EU/UK)</div>
+          <div class="c-chip" data-c="us" onclick="plannerToggle(this,'c')">🇺🇸 북미 (US/CA)</div>
+        </div>
+      </div>
+
+      <div class="planner-section">
+        <div class="planner-step-label">STEP 2 — 게임 기능 선택 (해당하는 항목 모두)</div>
+        <div class="feat-chip-grid">
+          <div class="f-chip" data-f="lootbox" onclick="plannerToggle(this,'f')">🎁 루트박스 / 가챠</div>
+          <div class="f-chip" data-f="chat" onclick="plannerToggle(this,'f')">💬 유저 간 채팅</div>
+          <div class="f-chip" data-f="minor" onclick="plannerToggle(this,'f')">👤 미성년자 이용</div>
+          <div class="f-chip" data-f="nft" onclick="plannerToggle(this,'f')">🔗 NFT / 블록체인</div>
+          <div class="f-chip" data-f="ugc" onclick="plannerToggle(this,'f')">✏️ UGC / 창작물</div>
+          <div class="f-chip" data-f="history" onclick="plannerToggle(this,'f')">🗺️ 역사 배경 / 실존인물</div>
+          <div class="f-chip" data-f="payment" onclick="plannerToggle(this,'f')">💳 인앱 결제</div>
+          <div class="f-chip" data-f="dei" onclick="plannerToggle(this,'f')">👥 DEI / 다양성 요소</div>
+        </div>
+      </div>
+
+      <div class="planner-result" id="plannerResult">
+        <div class="p-empty">
+          <div class="p-empty-icon">🚀</div>
+          국가와 게임 기능을 선택하면<br>해당 규제 리스크가 여기에 표시돼요
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ OVERVIEW PAGE ═══════════════ -->
+    <div id="page-overview" class="page active">
+      <div class="breadcrumb">홈 <span class="breadcrumb-sep">›</span> <span>전체 개요</span></div>
+      <div class="page-title">GLOBAL OVERVIEW</div>
+      <div class="page-headline">글로벌 게임 규제 현황</div>
+      <div class="page-desc">PC 온라인게임 기준, 6개 지역 주요 규제 데이터베이스입니다. 각 지역의 규제 강도와 핵심 리스크를 파악하고, 론칭 전 사전 대응이 필요한 항목을 확인하세요.</div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-title">
+          전체 검토 진행 현황 — 총 41개 규제
+          <span id="progressPct">0% 완료</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-seg done" id="prog-done" style="width:0%"></div>
+          <div class="progress-seg review" id="prog-review" style="width:0%"></div>
+          <div class="progress-seg applicable" id="prog-applicable" style="width:0%"></div>
+        </div>
+        <div class="progress-counts">
+          <div class="progress-count-item">
+            <div class="progress-count-num done" id="cnt-done">0</div>
+            <div class="progress-count-lbl">✓ 완료</div>
+          </div>
+          <div class="progress-count-item">
+            <div class="progress-count-num review" id="cnt-review">0</div>
+            <div class="progress-count-lbl">● 검토 필요</div>
+          </div>
+          <div class="progress-count-item">
+            <div class="progress-count-num applicable" id="cnt-applicable">0</div>
+            <div class="progress-count-lbl">— 해당 없음</div>
+          </div>
+          <div class="progress-count-item">
+            <div class="progress-count-num unchecked" id="cnt-unchecked">41</div>
+            <div class="progress-count-lbl">미검토</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-chip danger-chip" data-filter="HIGH" onclick="filterOverview(this)">🔴 HIGH</button>
+        <button class="filter-chip warn-chip" data-filter="MED" onclick="filterOverview(this)">🟡 MED</button>
+        <button class="filter-chip ok-chip" data-filter="LOW" onclick="filterOverview(this)">🟢 LOW</button>
+        <button class="filter-chip" data-filter="루트박스" onclick="filterOverview(this)">루트박스</button>
+        <button class="filter-chip" data-filter="미성년자" onclick="filterOverview(this)">미성년자</button>
+        <button class="filter-chip" data-filter="개인정보" onclick="filterOverview(this)">개인정보</button>
+        <button class="filter-chip" data-filter="사회문화" onclick="filterOverview(this)">사회문화</button>
+        <button class="filter-chip" data-filter="등급분류" onclick="filterOverview(this)">등급분류</button>
+      </div>
+        <div class="progress-wrap">
+        <div class="progress-title">전체 검토 진행 현황<span id="prog-pct">0% 완료</span></div>
+        <div class="progress-track">
+          <div class="progress-seg done" id="prog-done" style="width:0%"></div>
+          <div class="progress-seg review" id="prog-review" style="width:0%"></div>
+          <div class="progress-seg applicable" id="prog-applicable" style="width:0%"></div>
+        </div>
+        <div class="progress-counts">
+          <div class="progress-count-item"><div class="progress-count-num done" id="cnt-done">0</div><div class="progress-count-lbl">완료</div></div>
+          <div class="progress-count-item"><div class="progress-count-num review" id="cnt-review">0</div><div class="progress-count-lbl">검토 필요</div></div>
+          <div class="progress-count-item"><div class="progress-count-num applicable" id="cnt-applicable">0</div><div class="progress-count-lbl">해당 없음</div></div>
+          <div class="progress-count-item"><div class="progress-count-num unchecked" id="cnt-unchecked">0</div><div class="progress-count-lbl">미검토</div></div>
+        </div>
+      </div>
+      <div class="overview-grid">
+        <div class="stat-card danger">
+          <div class="stat-label">HIGH RISK 지역</div>
+          <div class="stat-value">4</div>
+          <div class="stat-sub">한국·중국·동남아·유럽 — 법적 의무 준수 필수</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="stat-label">MEDIUM RISK 지역</div>
+          <div class="stat-value">1</div>
+          <div class="stat-sub">일본 — 세부 대응 필요</div>
+        </div>
+        <div class="stat-card ok">
+          <div class="stat-label">LOW RISK 지역</div>
+          <div class="stat-value">1</div>
+          <div class="stat-sub">북미 — 자율규제 중심, 소송 동향 모니터링</div>
+        </div>
+      </div>
+
+      <div class="alert danger">
+        <strong>🚨 즉시 대응 필요</strong>
+        한국 확률형 아이템 3배 손해배상법 시행 중(2025.08.01~) + 게임산업법 전부개정안 발의(2025.09) — 2026년 이후 과징금 최대 매출액 3% 또는 10억원 신설 예정. 인도네시아 IGRS 등급 2026.01부터 의무화, PP Tunas 아동보호규제 2026.03.28 시행.
+      </div>
+
+      <div class="alert warn">
+        <strong>⚠️ 2026년 6월 시행 임박</strong>
+        유럽 PEGI 신규 기준 2026.06부터 적용 — 루트박스 최소 PEGI 16, NFT PEGI 18, 무제한 채팅 PEGI 18. EU Digital Fairness Act (루트박스 전면 금지 검토) Q4 2026 입법 예정.
+      </div>
+
+      <table class="overview-table" id="overviewTable">
+        <thead>
+          <tr>
+            <th>지역</th>
+            <th>리스크</th>
+            <th>핵심 이슈</th>
+            <th>최신 변경</th>
+            <th>PC 게임 필수 절차</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="showPage('kr')">
+            <td class="cell-country">🇰🇷 대한민국</td>
+            <td><span class="risk-pill HIGH">HIGH</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag red">확률형 아이템</span>
+              <span class="mini-tag red">징벌적 손배</span>
+              <span class="mini-tag yellow">게임물 등급</span>
+            </td>
+            <td>2026.02 피해구제센터 출범</td>
+            <td>등급분류 필수 (게임위)</td>
+          </tr>
+          <tr onclick="showPage('cn')">
+            <td class="cell-country">🇨🇳 중국</td>
+            <td><span class="risk-pill HIGH">HIGH</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag red">판호 취득 필수</span>
+              <span class="mini-tag red">현지 파트너</span>
+              <span class="mini-tag yellow">표현 규제</span>
+            </td>
+            <td>2026 승인 안정적 유지</td>
+            <td>NPPA ISBN 취득 (판호)</td>
+          </tr>
+          <tr onclick="showPage('jp')">
+            <td class="cell-country">🇯🇵 일본</td>
+            <td><span class="risk-pill MED">MED</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag yellow">가챠 규제</span>
+              <span class="mini-tag yellow">자금결제법</span>
+              <span class="mini-tag blue">EOCS 권고</span>
+            </td>
+            <td>2024 전자상거래법 개정</td>
+            <td>EOCS 등급 권장 (PC)</td>
+          </tr>
+          <tr onclick="showPage('sea')">
+            <td class="cell-country">🌏 동남아</td>
+            <td><span class="risk-pill HIGH">HIGH</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag red">인도네시아 PP Tunas</span>
+              <span class="mini-tag red">IGRS 등급 의무화</span>
+              <span class="mini-tag yellow">베트남 현지화</span>
+            </td>
+            <td>2026.03 인도네시아 PP Tunas 시행</td>
+            <td>국가별 개별 대응 필요</td>
+          </tr>
+          <tr onclick="showPage('eu')">
+            <td class="cell-country">🇪🇺 유럽</td>
+            <td><span class="risk-pill HIGH">HIGH</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag red">GDPR</span>
+              <span class="mini-tag red">PEGI 루트박스 16+</span>
+              <span class="mini-tag yellow">NFT PEGI 18</span>
+            </td>
+            <td>2026.06 PEGI 신규 기준 적용</td>
+            <td>PEGI 등급 취득 (신기준)</td>
+          </tr>
+          <tr onclick="showPage('na')">
+            <td class="cell-country">🇺🇸 북미</td>
+            <td><span class="risk-pill LOW">LOW</span></td>
+            <td class="cell-tags">
+              <span class="mini-tag blue">ESRB 등급</span>
+              <span class="mini-tag blue">COPPA</span>
+              <span class="mini-tag yellow">루트박스 소송 주시</span>
+            </td>
+            <td>NY州 Valve 루트박스 소송 진행</td>
+            <td>ESRB 등급 취득 (Steam 등)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ═══════════════ KOREA PAGE ═══════════════ -->
+    <div id="page-kr" class="page">
+      <div class="section-header">
+        <span class="section-flag">🇰🇷</span>
+        <div>
+          <div class="section-title">대한민국</div>
+          <div class="section-sub">주무 기관: 문화체육관광부, 게임물관리위원회 (게임위)</div>
+        </div>
+        <span class="risk-badge HIGH">HIGH RISK</span>
+      </div>
+
+      <div class="alert danger">
+        <strong>2025.08.01 시행 중 — 확률형 아이템 3배 손해배상 + 입증책임 전환</strong>
+        표시의무 위반 시 최대 3배 징벌적 손해배상. 입증책임이 이용자→게임사로 전환. 게임사가 고의·과실 없음을 스스로 증명해야 면책. 2026.02 피해구제센터 출범.
+      </div>
+
+      <div class="alert warn">
+        <strong>⚠️ 게임산업법 전부개정안 발의 (2025.09) — 입법 추진 중</strong>
+        20년 만의 전면 개편. 확률 미공개·허위 공개 시 매출액 3% 또는 10억 이하 과징금 신설 예정(2026 이후 시행 목표). 민간 자율등급분류 원칙 도입, 해외 게임사 국내대리인 지정 의무화 포함.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-1" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">확률형 아이템 정보공개 의무화 (게임산업법 제33조)</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-1','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-1','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-1','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2024년 3월 22일 확률 공개 의무화 시행, 2025년 8월 1일 손해배상 강화법 시행. 게임 및 홈페이지·광고에 확률형 아이템 정보 표시 의무. 위반 시 3배 징벌적 손해배상 + 입증책임 게임사 전환. 2026년 2월 피해구제센터 출범으로 이용자 민원·조사·법률지원까지 원스톱 대응 가능해짐.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">현행 처벌 (2025.08~)</div>
+                <div class="reg-meta-value">위반 시 실손해 최대 3배 징벌적 손해배상
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-1', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-1', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">형사처벌 (기존)</div>
+                <div class="reg-meta-value">2년 이하 징역 또는 2,000만원 벌금</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">예정 강화 (전부개정안)</div>
+                <div class="reg-meta-value">매출액 3% 또는 10억원 이하 과징금 (2026~ 목표)</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">피해구제센터</div>
+                <div class="reg-meta-value">2026.02 출범 — 민원접수·조사·법률지원 통합</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>모든 확률형 아이템의 종류·확률을 게임 내, 공식 홈페이지, 광고물에 정확히 표시</li>
+              <li>확률 변경 시 사전 공지 체계 수립 — 사후 발각 시 고의로 간주될 수 있음</li>
+              <li>입증책임이 게임사에 있으므로 확률 데이터 보관 및 감사 로그 체계 구축</li>
+              <li>피해구제센터 신고 접수 대응 프로세스(고객센터 연계) 사전 마련</li>
+              <li>전부개정안 입법 동향 분기별 모니터링 — 과징금 도입 시 BM 재설계 검토</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-2" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">게임물 등급분류 의무 (게임물관리위원회)</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-2','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-2','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-2','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">국내에서 유통되는 모든 게임물은 게임위로부터 사전 등급분류를 받아야 함. 등급: 전체이용가, 12세, 15세, 18세, 청소년이용불가. PC 온라인게임은 등급분류 필수이며 미등급 게임 유통은 불법.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">주무기관</div>
+                <div class="reg-meta-value">게임물관리위원회 (게임위)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-2', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-2', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">소요 기간</div>
+                <div class="reg-meta-value">통상 15~30일 (복잡한 경우 연장)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>론칭 최소 2개월 전 등급분류 신청</li>
+              <li>콘텐츠 변경(업데이트) 시 재심의 필요 여부 사전 검토</li>
+              <li>18세 이용가 등급 시 본인인증 시스템 연동 필요</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-3" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">셧다운제 / 게임 이용 시간 제한</span>
+            <span class="reg-tag advisory">권고/모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-3','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-3','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-3','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">강제적 셧다운제(16세 미만, 자정~오전 6시)는 2021년 폐지됨. 현재는 보호자 선택형 자율 규제(게임시간 선택제)로 전환. 그러나 미성년자 본인인증 및 과몰입 방지 기능은 여전히 권장.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>미성년자 본인인증 시스템 유지</li>
+              <li>보호자 요청 시 게임 이용 제한 기능 제공</li>
+              <li>과몰입 방지 팝업 등 자율 규제 기능 탑재 권장</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-3', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-3', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-4" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">개인정보 보호법 (PIPA) 준수</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-4','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-4','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-4','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">국내 이용자 개인정보 수집·처리 시 개인정보 보호법 적용. 2023년 개정으로 EU GDPR 수준에 근접. 법정대리인 동의, 국외 이전 시 별도 동의 필요.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>개인정보 처리방침 국문으로 명확히 공개</li>
+              <li>만 14세 미만 가입 시 법정대리인 동의 절차 구현</li>
+              <li>서버가 해외에 있을 경우 국외 이전 동의 화면 추가</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-4', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-4', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-5" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">결제 / 전자금융 관련 규제</span>
+            <span class="reg-tag advisory">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-5','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-5','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-5','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">게임 내 결제에 전자금융거래법 적용. 구글·애플 인앱결제 의무화 금지 법(앱마켓법)으로 제3자 결제 허용. 미성년자 결제 한도 제한 있음.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>월 결제 한도 초과 경고 알림 구현 (특히 미성년자)</li>
+              <li>제3자 결제 수단 제공 시 보안 인증 체계 구축</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-5', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-5', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <div class="page-title" style="margin-bottom:16px;">🚨 사회문화적 리스크 — 한국 특수 이슈</div>
+
+      <div class="alert warn">
+        <strong>법적 규제 외 커뮤니티 리스크 — 법보다 빠르게 움직임</strong>
+        한국 게임 시장은 젠더 갈등 이슈에 극도로 민감하며, 제작진·성우·외주사의 SNS 활동이 발단이 돼 서비스 자체가 불매운동·평점 테러에 노출되는 사례가 반복됨. 이는 글로벌 커뮤니티(Steam, Reddit, X)로 빠르게 확산되는 패턴을 보임.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-6" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">젠더 갈등 — 손가락 제스처·심볼 논란 (집게손 / 메갈손)</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-6','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-6','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-6','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">특정 손가락 포즈(엄지·검지 집게 모양)가 래디컬 페미니즘 커뮤니티(메갈리아/워마드)의 상징으로 해석되며, 게임 일러스트·PV·이모티콘 등에 포함 시 대규모 불매·환불·평점 테러로 번짐. 넥슨(메이플스토리), 카카오게임즈, 원신(miHoYo), 리버스1999 등 글로벌 게임들도 한국 서버 한정으로 이미지를 수정한 전례 있음. 반대로 일베(일간베스트) 연상 요소(특정 텍스트 패턴, 숫자 조합 등)가 삽입됐다는 의혹도 동일한 구조로 폭발함.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">주요 사례</div>
+                <div class="reg-meta-value">메이플스토리 엔젤릭버스터 PV, 림버스 컴퍼니, 클로저스 성우 교체, 블루아카이브
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-6', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-6', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">리스크 경로</div>
+                <div class="reg-meta-value">커뮤니티 제보 → 온라인 확산 → 언론 보도 → 공식 사과 / 수정 요구</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">글로벌 파급</div>
+                <div class="reg-meta-value">Steam 평점 테러, 영문 유튜브·Reddit 역확산 사례 다수</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">일베 연상 이슈</div>
+                <div class="reg-meta-value">특정 숫자·텍스트 조합, 민주화 비하 표현 등 — 정반대 진영에서 동일한 방식으로 문제 제기</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>전체 아트 에셋(일러스트·애니메이션·이모티콘·UI 아이콘)의 손가락 포즈 사전 검수 — 자연스러운 동작도 의심받을 수 있음</li>
+              <li>한국 커뮤니티(디시인사이드, 아카라이브, 인벤) 민감 패턴 체크리스트 수립</li>
+              <li>외주 스튜디오·성우·일러스트레이터의 공개 SNS 활동 계약상 리스크 관리 조항 포함</li>
+              <li>논란 발생 시 신속 대응 프로세스(24시간 내 입장 발표) 사전 수립</li>
+              <li>한국 서버 별도 에셋 관리 파이프라인 구축 고려</li>
+            </ul>
+            <div class="ref-label">📎 참고 사례</div>
+            <div class="ref-links">
+              <a class="ref-link" href="https://namu.wiki/w/2023%EB%85%84%20%EB%82%A8%EC%84%B1%ED%98%90%EC%98%A4%20%ED%91%9C%ED%98%84%20%EC%97%B0%EC%87%84%20%ED%8C%8C%EB%8F%99" target="_blank" rel="noopener">
+                <span class="ref-link-icon">📖</span> 나무위키 — 2023 남성혐오 표현 연쇄 파동
+              </a>
+              <a class="ref-link" href="https://namu.wiki/w/%EC%8A%A4%ED%8A%9C%EB%94%94%EC%98%A4%20%EB%BF%8C%EB%A6%AC%20%EB%82%A8%EC%84%B1%ED%98%90%EC%98%A4%20%EB%85%BC%EB%9E%80" target="_blank" rel="noopener">
+                <span class="ref-link-icon">📖</span> 나무위키 — 스튜디오 뿌리 논란 (메이플스토리 발단)
+              </a>
+              <a class="ref-link" href="https://namu.wiki/w/%EB%A6%BC%EB%B2%84%EC%8A%A4%20%EC%BB%B4%ED%8D%BC%EB%8B%88%20%EC%9B%90%ED%99%94%EA%B0%80%20%ED%8A%B8%EC%9C%84%ED%84%B0%20%EB%82%A8%EC%84%B1%ED%98%90%EC%98%A4%20%EB%85%BC%EB%9E%80" target="_blank" rel="noopener">
+                <span class="ref-link-icon">📖</span> 나무위키 — 림버스 컴퍼니 원화가 논란 (Steam 평점 폭락)
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-7" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">제작진 SNS 사상검증 문화</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-7','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-7','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-7','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">개발자·성우·외주 스태프의 과거 SNS 게시물이 집중 발굴되어 게임 전체의 불매운동으로 이어지는 패턴. 원화가의 리트윗 하나, 성우의 페미니즘 지지 트윗이 발단이 된 사례 다수. 클로저스 성우 교체 논란(2016)에서 시작해 현재까지 반복 중. 림버스 컴퍼니는 강경 대응 후 Steam 평점이 폭락했다가 반등한 사례.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>크레딧에 공개되는 외주·성우 계약 시 공개 SNS 리스크 관리 조항 포함 검토</li>
+              <li>논란 발생 즉시 대응 매뉴얼 수립 — 침묵 vs 입장 발표 타이밍이 여론에 결정적 영향</li>
+              <li>국내 커뮤니티 모니터링 팀 운영 또는 외부 대응 에이전시 확보</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-7', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-7', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-8" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">캐릭터 성별·외형 표현 갈등</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-8','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-8','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-8','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">여성 캐릭터의 노출 수위 축소, 남성 캐릭터의 미형화, 비이진(non-binary) 캐릭터 추가 등 캐릭터 표현 변화가 한국 남성 유저층의 강한 반발을 사는 경우가 많음. 반대로 여성 캐릭터의 과도한 성적 표현은 여성 유저·페미니즘 진영의 항의를 받음. 양쪽 모두 조직적 민원·평점 공격·환불 요구로 이어짐. 글로벌 게임에서 서양권 DEI 기조(다양성·형평·포용)를 적용할 경우 한국 시장에서 특히 강한 역반응 발생.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>캐릭터 디자인 변경 시 한국 유저 반응 사전 리서치 필수</li>
+              <li>글로벌 버전 DEI 적용 사항이 한국 서버에 그대로 적용될 경우 현지 반응 시뮬레이션</li>
+              <li>캐릭터 외형 변경 패치는 선제 공지 및 이유 설명으로 충격 완화</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-8', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-8', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="ucards-page-kr-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-kr-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-kr')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+    <!-- ═══════════════ CHINA PAGE ═══════════════ -->
+    <div id="page-cn" class="page">
+      <div class="section-header">
+        <span class="section-flag">🇨🇳</span>
+        <div>
+          <div class="section-title">중국 (Mainland China)</div>
+          <div class="section-sub">주무 기관: 국가신문출판총서 (NPPA)</div>
+        </div>
+        <span class="risk-badge HIGH">HIGH RISK</span>
+      </div>
+
+      <div class="alert danger">
+        <strong>판호 없이 운영 불가 — 외국 게임은 더욱 엄격</strong>
+        2026년 1·2·3월 판호 승인 안정적 유지 (3월 기준 국내 130건 + 수입 3건). 수입 게임 연간 100건대 수준 유지. 현지 퍼블리셔 파트너십 필수, 평균 심사 기간 1~3년 이상.
+      </div>
+
+      <div class="alert info">
+        <strong>📌 2025년 상하이 파일럿 정책 — 진행 중</strong>
+        상하이 소재 외국인투자기업 개발 게임을 국내 게임으로 취급하는 시범 정책(2025.07 발표). 상하이 거점 확보 시 심사 기간 및 절차 단축 가능성. 적용 범위 확대 여부 지속 모니터링 필요.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-9" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">판호 (ISBN) 취득 — 게임 출판 허가</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-9','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-9','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-9','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">중국 내 모든 온라인 게임 서비스는 NPPA의 ISBN(판호) 취득 필수. 외국 게임은 중국 현지 법인 또는 퍼블리셔를 통해 신청해야 하며, 심사는 콘텐츠·정치적 표현·역사 묘사 등 광범위한 항목 포함.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">심사 기관</div>
+                <div class="reg-meta-value">국가신문출판총서 (NPPA)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-9', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-9', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">평균 소요 기간</div>
+                <div class="reg-meta-value">수입 게임 기준 1~3년 이상</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">2024년 수입 승인</div>
+                <div class="reg-meta-value">109건 (국내 1,306건 대비)</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">현지 파트너</div>
+                <div class="reg-meta-value">Publishing Entity + Operating Entity 분리 필요</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>중국 현지 퍼블리셔/파트너사 조기 확보 (텐센트, 넷이즈 등)</li>
+              <li>판호 신청 전 콘텐츠 사전 검토 (금기 표현 목록 확인)</li>
+              <li>상하이 파일럿 정책 적용 가능 여부 법무팀 검토</li>
+              <li>판호 취득 전 CBT/OBT 등 어떠한 유료화도 불가</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-10" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">콘텐츠 표현 규제 — 금지 항목</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-10','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-10','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-10','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">중국 당국이 규제하는 표현 항목들이 광범위하며, 이를 위반하면 판호 거부 또는 운영 중단 명령을 받을 수 있음.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">정치/역사 표현</div>
+                <div class="reg-meta-value">대만·티베트·홍콩 독립 암시 금지, 중국 영토 왜곡 금지
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-10', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-10', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">시각적 표현</div>
+                <div class="reg-meta-value">해골·유혈·뼈 강조 묘사 제한, 과도한 폭력 금지</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">종교/문화</div>
+                <div class="reg-meta-value">종교 비하 표현 금지, 귀신·악령 등 음양 세계관 표현 주의</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">복장/캐릭터</div>
+                <div class="reg-meta-value">특정 정치적 상징물, 군복 비하 등 금지</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>중국 버전 별도 빌드 제작 — 글로벌 버전과 분리 운영</li>
+              <li>지도 표현 별도 검토 (지도 묘사 오류 시 매우 심각한 제재)</li>
+              <li>중국 문화 컨설턴트와 전체 아트 에셋 사전 리뷰</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-11" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">미성년자 보호 — 게임 이용 시간 및 결제 제한</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-11','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-11','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-11','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2021년 강화된 미성년자 게임 규제. 18세 미만은 금·토·일·법정공휴일 저녁 8~9시(1시간)만 게임 허용. 실명 인증 기반 시스템 구축 의무.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">허용 시간</div>
+                <div class="reg-meta-value">주말/공휴일 20:00~21:00 (주 3시간)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-11', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-11', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">결제 제한</div>
+                <div class="reg-meta-value">8~16세 월 200위안 / 16~18세 월 400위안</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>실명 인증 시스템 (국가 신분증 연동) 필수 구현</li>
+              <li>미성년자 탐지 시 게임 접속 자동 차단 기능</li>
+              <li>안면 인식 연동 인증 시스템 (선택적 요구사항)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-12" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">개인정보 및 데이터 현지화 (PIPL)</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-12','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-12','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-12','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">중국 개인정보보호법(PIPL, 2021) 적용. 중국 내 수집된 개인정보는 원칙적으로 중국 내 서버에 저장해야 하며, 국외 이전 시 별도 승인 필요.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>중국 서버 별도 구축 또는 현지 클라우드(알리바바, 텐센트) 사용</li>
+              <li>국외 데이터 이전 시 CAC 승인 또는 표준계약 체결</li>
+              <li>개인정보 처리 목적·방법 중문으로 공개</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-12', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-12', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-13" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">확률형 아이템 (가챠) 공개 규제</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-13','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-13','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-13','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">중국도 게임 내 무작위 아이템 확률 공개를 의무화. 특히 게임 내 가상화폐(원보 등)로 구매하는 확률형 아이템의 실제 위안화 환산 가격 표기 필요.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>모든 랜덤박스 확률 게임 내 명시</li>
+              <li>가상화폐↔위안화 환산 비율 명확히 공개</li>
+              <li>컴플리트 가챠 (복합 확률형) 금지 여부 법무 검토</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-13', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-13', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-14" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">온라인 게임 관리 방법 초안 (NPPA 2023 Draft)</span>
+            <span class="reg-tag watch">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-14','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-14','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-14','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2023년 12월 NPPA가 공개한 온라인 게임 관리 방법 초안. 로그인 보너스·로그아웃 유도 기능 제한 등 이용자 보호 조항 다수 포함. 정식 시행 시점 확인 필요.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>초안 내 데일리 로그인 보상, 소비 유도 기능 등 현행 시스템 대조 검토</li>
+              <li>법무팀과 정식 시행 여부 지속 모니터링</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-14', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-14', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <div class="page-title" style="margin-bottom:16px;">🚨 사회문화적 리스크 — 중국 특수 이슈</div>
+
+      <div class="reg-grid">
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-15" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">역사·영토 표현 — 지도·국기·지명 오류</span>
+            <span class="reg-tag watch">커뮤니티 + 법적 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-15','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-15','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-15','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">중국 내 유통 게임에서 대만·홍콩·티베트를 독립국으로 표기하거나, 남중국해 영해 경계를 잘못 묘사하면 판호 거부 및 서비스 즉시 차단. 중국 유저들이 전 세계 서버 버전까지 검수하는 경우 있어 글로벌 버전도 영향 받음. 일본 게임에서 중일 역사 갈등 관련 표현(야스쿠니 신사, 난징 사건 묘사 등)도 고위험.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">지도 표현</div>
+                <div class="reg-meta-value">대만·홍콩·남중국해 독립 표기 금지 — 전 세계 버전 포함
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-15', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-15', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">역사 표현</div>
+                <div class="reg-meta-value">중일전쟁·한국전쟁 묘사 시 중국 공식 입장 기준 요구</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>월드맵·미니맵·국가 선택 UI 등 모든 지도 요소 중국 전문가 검수 필수</li>
+              <li>글로벌 버전과 중국 버전 지도 에셋 분리 관리</li>
+              <li>역사적 분쟁 지역 배경의 스토리·이벤트는 법무·문화 컨설턴트 사전 리뷰</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-16" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">중일·중한 지정학적 긴장 반영 콘텐츠</span>
+            <span class="reg-tag watch">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-16','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-16','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-16','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">miHoYo(붕괴: 스타레일)가 일본 지명을 사용한 게임 지역명을 중일 외교 긴장 시기에 '플라나르카디아'로 변경한 사례처럼, 외교 관계에 따라 콘텐츠 수정 압력이 발생함. 한국 IP 기반 게임이 중국 시장에서 한한령(限韓令) 영향을 받을 가능성도 상시 존재.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>중국·일본·한국 포함 복합 운영 시 지정학 긴장 시 콘텐츠 대응 프로세스 수립</li>
+              <li>특정 국가 문화·언어에서 영감받은 게임 지역·캐릭터명은 중립적 명칭 병기 검토</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-16', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-16', event)">삭제</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ucards-page-cn-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-cn-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-cn')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+    <!-- ═══════════════ JAPAN PAGE ═══════════════ -->
+    <div id="page-jp" class="page">
+      <div class="section-header">
+        <span class="section-flag">🇯🇵</span>
+        <div>
+          <div class="section-title">일본</div>
+          <div class="section-sub">주무 기관: 경제산업성, 금융청 (FSA), 소비자청 (CAA)</div>
+        </div>
+        <span class="risk-badge MED">MED RISK</span>
+      </div>
+
+      <div class="alert warn">
+        <strong>2024 전자상거래법 개정 — 가챠 과금 강화</strong>
+        무작위 유료 아이템 등 도박성 과금 시스템에 대한 규제 심사가 강화됨. 블록체인 기반 아이템은 AML·증권법 리스크 별도 검토 필요.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-17" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">EOCS 등급 심사 (PC 게임)</span>
+            <span class="reg-tag advisory">권고</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-17','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-17','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-17','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">PC 게임은 CERO가 아닌 EOCS(컴퓨터소프트웨어윤리기구)가 관할. CERO와 달리 EOCS 심사는 강제 의무는 아니나, Steam 등 플랫폼 및 유통사 대부분이 등급 취득을 요구.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">PC 게임 관할</div>
+                <div class="reg-meta-value">EOCS (컴퓨터소프트웨어윤리기구)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-17', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-17', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">법적 강제성</div>
+                <div class="reg-meta-value">없음 (플랫폼 정책상 사실상 필수)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>PC 온라인 배포 전 EOCS 등급 심사 신청 검토</li>
+              <li>폭력·성적 표현 등 EOCS 심사 기준과 콘텐츠 사전 대조</li>
+              <li>Steam 일본 퍼블리싱 시 Steam의 자체 연령인증 정책 별도 확인</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-18" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">컴플리트 가챠 금지 및 가챠 규제</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-18','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-18','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-18','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">일본 소비자청은 2012년부터 '컴플리트 가챠(여러 종류 아이템 세트를 모두 모아야 완성 아이템 획득)'를 경품표시법 위반으로 금지. 일반 가챠는 허용되나 확률 공개 및 천장(pity) 시스템이 사실상 업계 표준.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>컴플리트 가챠 구조가 없는지 과금 설계 단계에서 검토</li>
+              <li>확률 정보 인게임 공개 및 천장 시스템 도입 강력 권장</li>
+              <li>2024 전자상거래법 개정에 따른 미성년자 과금 심사 강화 대응</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-18', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-18', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-19" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">자금결제법 — 선불식 결제 규제</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-19','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-19','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-19','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">게임 내 선불 충전 화폐(게임 머니, 캐시 등) 발행은 자금결제법상 '선불식 지급수단'에 해당. 일정 기준 초과 시 금융청 등록 의무 발생.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">등록 기준</div>
+                <div class="reg-meta-value">연간 발행액 1,000만 엔 초과 시
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-19', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-19', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">규제 기관</div>
+                <div class="reg-meta-value">금융청 (FSA)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>일본 법무·세무팀과 선불 결제 구조 사전 검토</li>
+              <li>발행액 기준 초과 예상 시 금융청 등록 절차 준비</li>
+              <li>가상 통화 교환 기능(P2P 거래 등) 있을 경우 별도 규제 검토</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-20" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">게임 영상·스트리밍 저작권</span>
+            <span class="reg-tag advisory">주의</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-20','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-20','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-20','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">일본은 게임 플레이 영상을 2차 저작물로 취급. IP 보유자의 명시적 허락 없이 스트리밍 시 저작권 침해 가능성. 다만 대부분 퍼블리셔가 '스트리밍 가이드라인'을 자체적으로 공개.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>일본 서비스 론칭 시 공식 스트리밍 허용 가이드라인 공개 필요</li>
+              <li>유튜브·니코니코 등 플랫폼별 ContentID 정책과 충돌 없도록 조정</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-20', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-20', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-21" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">개인정보보호법 (APPI) 개정</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-21','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-21','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-21','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">일본 개인정보보호법(APPI) 2022년 개정으로 제3자 제공 시 본인 확인 강화, 위반 시 과징금 도입. 개인정보 국외 이전 시 추가 보호 조치 필요.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>일본어 개인정보 처리방침 최신화</li>
+              <li>마케팅 목적 데이터 사용 시 명시적 opt-in 동의 구현</li>
+              <li>국외 이전 시 계약상 보호 조치 문서화</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-21', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-21', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="divider"></div>
+      <div class="page-title" style="margin-bottom:16px;">🚨 사회문화적 리스크 — 일본 특수 이슈</div>
+
+      <div class="reg-grid">
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-22" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">욱일기·군국주의 상징 — 한국·중국 시장과 충돌</span>
+            <span class="reg-tag watch">크로스-리전 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-22','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-22','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-22','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">욱일기 문양, 일본 구군복 디자인, 야스쿠니 신사 관련 표현 등이 게임에 포함될 경우 한국·중국 유저 커뮤니티에서 강한 반발 발생. 반대로 이를 삭제하면 일본 내셔널리스트 유저의 항의를 받는 구조. Assassin's Creed Shadows(야스케 논란)처럼 역사적 배경 게임에서 특히 민감.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">충돌 구조</div>
+                <div class="reg-meta-value">일본판 포함 → 한·중 반발 / 일본판 삭제 → 일본 우익 반발
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-22', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-22', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">대표 사례</div>
+                <div class="reg-meta-value">워게이밍(전함 게임), AC Shadows 야스케 논란, 붕괴 스타레일 지명 수정</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>일본 역사 배경 게임의 군사·정치 상징물은 한·중·일 문화 전문가 트리플 검수</li>
+              <li>욱일기 패턴이 포함된 디자인은 지역별 버전 분리 여부 사전 결정</li>
+              <li>역사적 실존 인물 등장 시 각국 커뮤니티 반응 사전 리서치</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-23" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">DEI·역사 재해석 — 서양 게임의 일본 배경 논란</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-23','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-23','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-23','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">서구 개발사가 일본 배경 게임을 제작할 때 역사적 다양성·대표성(흑인 사무라이 야스케 등)을 강조할 경우, 일본 국내 민족주의 커뮤니티와 글로벌 안티-DEI 진영이 동시에 반발하는 이중 리스크. Ubisoft AC Shadows는 이 논란으로 출시 지연 및 주가 급락 사례.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>일본 역사·문화를 소재로 할 경우 일본 현지 역사 자문 확보</li>
+              <li>실존 역사 인물 기반 캐릭터는 역사적 근거 자료 선제 공개 검토</li>
+              <li>일본 커뮤니티(5ch, 니코니코) 사전 반응 모니터링</li>
+            </ul>
+            <div class="ref-label">📎 참고 사례</div>
+            <div class="ref-links">
+              <a class="ref-link" href="https://namu.wiki/w/%EC%96%B4%EC%8C%94%EC%8B%A0%20%ED%81%AC%EB%A6%AC%EB%93%9C:%20%EC%84%80%EB%8F%84%EC%9A%B0%EC%8A%A4/%EB%85%BC%EB%9E%80%20%EB%B0%8F%20%EC%82%AC%EA%B1%B4%20%EC%82%AC%EA%B3%A0" target="_blank" rel="noopener">
+                <span class="ref-link-icon">📖</span> 나무위키 — AC Shadows 논란 전체 (야스케·고증·DEI)
+              </a>
+              <a class="ref-link" href="https://ko.wikipedia.org/wiki/Assassin%27s_Creed_Shadows" target="_blank" rel="noopener">
+                <span class="ref-link-icon">🌐</span> 위키백과 — AC Shadows (신사 훼손·원폭 토리이 논란)
+              </a>
+            
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-23', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-23', event)">삭제</button></div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ucards-page-jp-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-jp-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-jp')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+    <!-- ═══════════════ SEA PAGE ═══════════════ -->
+    <div id="page-sea" class="page">
+      <div class="section-header">
+        <span class="section-flag">🌏</span>
+        <div>
+          <div class="section-title">동남아시아 (SEA)</div>
+          <div class="section-sub">인도네시아, 베트남, 태국, 필리핀, 싱가포르 주요 규제</div>
+        </div>
+        <span class="risk-badge HIGH">HIGH RISK</span>
+      </div>
+
+      <div class="alert danger">
+        <strong>인도네시아 PP Tunas 2026.03.28 시행 + IGRS 등급 2026.01 의무화</strong>
+        PP Tunas(아동보호규제): 16세 미만 고위험 플랫폼 계정 비활성화 의무. 게임 포함 디지털 서비스 전체 적용. IGRS(인도네시아 게임등급분류): 2026.01부터 인도네시아 내 유통 모든 게임에 필수. 기존 게임 2년 유예기간 2026.06 만료.
+      </div>
+
+      <div class="alert warn">
+        <strong>⚠️ 베트남 국경 간 서비스 금지 / 태국 Game Industry Act 입법 진행</strong>
+        베트남: 현지 법인 없이 서비스 불가. 태국: ASEAN 최초 게임 전용 법령 추진 중, 통과 시 퍼블리셔 등록 의무화 예상.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-24" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">인도네시아 — PP Tunas 아동보호 규제 (2026.03.28 시행)</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-24','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-24','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-24','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">PP Tunas(GR 17/2025) 및 시행령 MR 9/2026이 2026년 3월 28일부터 시행. 고위험 플랫폼으로 지정된 서비스는 16세 미만 계정 비활성화 의무. 게임 포함 모든 디지털 플랫폼이 아동 리스크 자가 평가를 제출해야 함. PUBG, Mobile Legends 등이 이미 제출 대상에 포함.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">시행일</div>
+                <div class="reg-meta-value">2026.03.28 (고위험 플랫폼 즉시 적용)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-24', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-24', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">자가평가 제출 기한</div>
+                <div class="reg-meta-value">시행 후 3개월 이내 (2026.06 기한)</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">13세 미만</div>
+                <div class="reg-meta-value">보호자 동의 없이 계정 생성 불가</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">제재</div>
+                <div class="reg-meta-value">경고 → 과징금 → 서비스 접근 차단</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>아동 리스크 자가 평가 5개 지표(폭력·음란·도박·사행·유해콘텐츠 등) 기준으로 내부 평가 실시</li>
+              <li>13세 미만 보호자 동의 플로우, 16세 미만 인게임 구매 제한 기능 구현</li>
+              <li>인도네시아 내 연간 아동 안전 보고 제출 체계 마련</li>
+              <li>루트박스 포함 시 미성년자 접근 제한 설계 선제적 적용</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-25" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">인도네시아 — IGRS 게임 등급분류 의무화 (2026.01~)</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-25','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-25','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-25','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">MOCD Regulation 2/2024에 따라 2026년 1월부터 인도네시아에서 광고·유통·접근 가능한 모든 게임은 IGRS(Indonesia Game Rating System) 등급 취득 필수. 기존 유통 게임의 2년 유예기간이 2026.06에 만료되어 더 이상 유예 적용 불가.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">의무화 시점</div>
+                <div class="reg-meta-value">2026.01.24 (신규 게임) / 2026.06 (기존 게임 유예 만료)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-25', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-25', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">등급 체계</div>
+                <div class="reg-meta-value">IARC 기반 (3/6/10/13/16/18세)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>인도네시아 서비스 게임 전수 IGRS 등급 취득 여부 점검 (유예기간 만료)</li>
+              <li>IARC 자가 심사 시스템을 통해 IGRS 등급 신청 가능</li>
+              <li>등급 미표시 게임은 경고→임시정지→차단 제재 대상</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-26" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">베트남 — 게임 허가 및 현지법인 필수</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-26','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-26','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-26','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">베트남은 국경 간 게임 서비스 제공을 금지하며, 외국 개발사는 반드시 베트남 내 법인을 설립하고 당국 허가를 받아야 서비스 가능. 카드게임·카지노 유사 게임은 별도 규제.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>베트남 서비스 시 현지 법인 또는 인가된 퍼블리셔 파트너 필수</li>
+              <li>정보통신부(MIC) 온라인 게임 허가 취득</li>
+              <li>카드형 PvP, 포커 유사 게임 유형 포함 여부 사전 법무 확인</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-26', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-26', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-27" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">태국 — Game Industry Act 입법 진행 중</span>
+            <span class="reg-tag watch">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-27','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-27','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-27','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">태국은 ASEAN 최초로 게임 전용 법령(Game Industry Act) 제정을 추진 중. 도박성 요소 방지 및 소비자 보호를 골자로 하며, 법안 통과 시 퍼블리셔 등록 의무화 예상.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>Game Industry Act 입법 동향 분기별 모니터링</li>
+              <li>태국 배포 시 도박성 요소(루트박스 포함) 선제적 대응 설계</li>
+              <li>GamescomAsia 2025 (방콕) 등 현지 네트워크 활용</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-27', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-27', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-28" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">싱가포르 — 상대적으로 자유로운 환경</span>
+            <span class="reg-tag advisory">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-28','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-28','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-28','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">싱가포르는 동남아 게임 허브로, 명시적 게임별 허가제 없음. 단, 개인정보보호법(PDPA), 온라인 안전법(OSA) 적용. 미성년자 보호 규정 강화 추세.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>PDPA 준수 개인정보 처리방침 영문 공개</li>
+              <li>온라인 안전법 상 유해 콘텐츠 기준 확인</li>
+              <li>동남아 허브 법인으로 활용 시 다국가 운영 컴플라이언스 체계 구축</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-28', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-28', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-29" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">SEA 공통 — 종교·문화 콘텐츠 민감 사항</span>
+            <span class="reg-tag advisory">주의</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-29','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-29','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-29','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">동남아 지역은 이슬람(인도네시아·말레이시아), 불교(태국·미얀마), 가톨릭(필리핀) 등 종교적 다양성이 높음. 특정 종교·문화 표현이 현지에서 부적절하거나 불법으로 간주될 수 있음.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>캐릭터·스킨·스토리에 종교적 상징(십자가, 이슬람 문양 등)이 사용된 경우 현지 문화 검토</li>
+              <li>국가별 현지화팀 또는 문화 컨설턴트와 에셋 검수</li>
+              <li>이슬람권 대상 라마단 이벤트 기획 시 적절성 검토</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-29', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-29', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+      <div id="ucards-page-sea-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-sea-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-sea')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+    <!-- ═══════════════ EU PAGE ═══════════════ -->
+    <div id="page-eu" class="page">
+      <div class="section-header">
+        <span class="section-flag">🇪🇺</span>
+        <div>
+          <div class="section-title">유럽 (EU / UK)</div>
+          <div class="section-sub">주무 기관: 유럽위원회, 각국 DPA, PEGI, ICO(UK)</div>
+        </div>
+        <span class="risk-badge HIGH">HIGH RISK</span>
+      </div>
+
+      <div class="alert danger">
+        <strong>PEGI 신규 기준 2026.06부터 신규 제출 게임 전체 적용</strong>
+        루트박스(유료 랜덤 아이템) → 최소 PEGI 16 / NFT·블록체인 → PEGI 18 / 무제한 채팅(차단·신고 기능 없음) → PEGI 18 / 시간·수량 한정 구매 → PEGI 12. 기존 게임은 콘텐츠 변경 시 재심의 대상.
+      </div>
+
+      <div class="alert warn">
+        <strong>⚠️ EU Digital Fairness Act — 루트박스 전면 금지 검토 (Q4 2026 입법 예정)</strong>
+        유럽의회 IMCO위원회가 2025.10 미성년자 접근 가능 게임의 루트박스 전면 금지 권고. EC가 Q3~Q4 2026 입법안 제출 예정. 통과 시 PEGI 규제보다 더 강력한 직접 금지.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-30" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">GDPR — 개인정보 보호 규정</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-30','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-30','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-30','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">EU 거주자의 개인정보를 처리하는 모든 기업에 적용. 동의 기반 데이터 처리, 잊혀질 권리, 정보이동권 등 이용자 권리 보장 필수. 위반 시 전 세계 연매출의 4% 또는 2,000만 유로 중 더 큰 금액 제재.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">최대 과징금</div>
+                <div class="reg-meta-value">연매출 4% 또는 2,000만 유로 (더 큰 금액)
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-30', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-30', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">미성년자 특칙</div>
+                <div class="reg-meta-value">미성년자 타겟 맞춤형 광고 금지 (DSA)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>EU 거주자 대상 개인정보 처리방침 GDPR 요건 충족 여부 법무 검토</li>
+              <li>쿠키 동의 배너 구현 (묵시적 동의 불가)</li>
+              <li>DPO(데이터 보호 책임자) 지정 요건 검토</li>
+              <li>미성년자 대상 맞춤 광고 차단 메커니즘 구현</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-31" onclick="toggleCard(this)">
+            <span class="reg-severity HIGH"></span>
+            <span class="reg-title">PEGI 신규 인터랙티브 리스크 등급 (2026.06 적용)</span>
+            <span class="reg-tag new">2026.07 시행</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-31','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-31','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-31','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2026년 7월부터 신규 제출 게임에 적용. 기존 콘텐츠 기반 등급에 더해 게임 기능(과금 방식, 커뮤니케이션, 블록체인)이 등급에 직접 영향. 영국에서는 PEGI 등급이 법적 강제력을 가져 루트박스 포함 게임은 PEGI 16 → 사실상 영국 내 미성년자 판매 금지에 준함.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">유료 랜덤 아이템 (루트박스)</div>
+                <div class="reg-meta-value">최소 PEGI 16 — 스포츠 게임 등도 해당
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-31', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-31', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">NFT / 블록체인 연동</div>
+                <div class="reg-meta-value">자동 PEGI 18</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">무제한 채팅 (차단·신고 없음)</div>
+                <div class="reg-meta-value">자동 PEGI 18</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">시간·수량 한정 구매</div>
+                <div class="reg-meta-value">최소 PEGI 12 (부모 결제 제한 기능 있으면 PEGI 7 검토)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>루트박스 포함 게임은 PEGI 16 전제로 유럽 마케팅·유통 전략 전면 재검토</li>
+              <li>NFT·블록체인 요소 포함 시 PEGI 18 기준 연령 인증 시스템 필수</li>
+              <li>채팅 기능 있는 게임은 차단·신고·그룹채팅 관리 기능 반드시 탑재</li>
+              <li>기존 등록 게임도 콘텐츠 업데이트(루트박스 추가 등) 시 재심의 대상</li>
+              <li>EU Digital Fairness Act Q4 2026 입법 동향 집중 모니터링</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-32" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">디지털서비스법 (DSA) — 플랫폼 책임</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-32','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-32','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-32','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">EU DSA는 온라인 플랫폼이 불법 콘텐츠에 신속히 대응하도록 규정. 게임 내 UGC, 채팅, 커뮤니티 기능 있는 서비스는 DSA의 플랫폼 책임 조항 적용 가능.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>불법 콘텐츠 신고·처리 체계(CSAM, 혐오 발언 등) 구축</li>
+              <li>광고 타겟팅 opt-out 기능 제공</li>
+              <li>미성년자 맞춤 광고 전면 차단</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-32', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-32', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-33" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">영국 Online Safety Act (OSA) — 아동 보호</span>
+            <span class="reg-tag new">2025.07 시행</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-33','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-33','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-33','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2025년 7월 영국 Ofcom 아동 보호 코드 발효. UGC 공유 또는 유저 간 소통 기능이 있는 게임은 아동 안전 조치 의무화. 자기선언식 연령인증 방식은 2026년부터 종료.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>18세 미만 유저가 다른 계정을 차단·음소거할 수 있는 기능 필수 탑재</li>
+              <li>그룹 채팅 초대 관리 기능 제공</li>
+              <li>2026년 연령인증 강화 규정에 맞게 인증 시스템 업그레이드 계획 수립</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-33', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-33', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-34" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">인게임 가상화폐 규제 (EC 소비자 보호)</span>
+            <span class="reg-tag watch">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-34','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-34','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-34','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2025년 3월 유럽위원회 소비자보호협력네트워크(CPC)가 인게임 가상화폐 관련 7원칙 가이드 발표. 실제 가치 모호화, 가격 불투명성 등을 불공정 상행위로 규정.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>인게임 재화와 실제 화폐 환산 가격을 명확히 표기</li>
+              <li>결제 흐름에서 실 지출 금액 혼동을 유발하는 UI 패턴 제거</li>
+              <li>CPC 7원칙 기준으로 결제 UI/UX 내부 감사 실시</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-34', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-34', event)">삭제</button></div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-35" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">독일 USK — 루트박스 연령 상향 (2023~)</span>
+            <span class="reg-tag advisory">주의</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-35','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-35','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-35','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">독일 USK는 2023년부터 루트박스 포함 게임에 더 높은 연령 등급 부여. 2025년 보고서에 따르면 2024년 제출 게임의 약 30%가 루트박스 관련 카테고리에 해당, 이 중 약 1/3이 연령 등급 상향.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>독일 유통 시 USK 등급 심사 신청 및 루트박스 콘텐츠 명시</li>
+              <li>PEGI와 USK 등급이 상이할 경우 독일 현지 버전 관리</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-35', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-35', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+      <div id="ucards-page-eu-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-eu-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-eu')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+    <!-- ═══════════════ NA PAGE ═══════════════ -->
+    <div id="page-na" class="page">
+      <div class="section-header">
+        <span class="section-flag">🇺🇸</span>
+        <div>
+          <div class="section-title">북미 (미국 / 캐나다)</div>
+          <div class="section-sub">주무 기관: FTC, ESRB (자율규제), COPPA</div>
+        </div>
+        <span class="risk-badge LOW">LOW RISK</span>
+      </div>
+
+      <div class="alert info">
+        <strong>자율규제 중심, 루트박스 입법화 모니터링 필요</strong>
+        현재 연방 차원의 게임 전용 규제법은 없음. 단, FTC의 COPPA 집행 강화 및 루트박스 관련 입법 동향 지속 주시 필요.
+      </div>
+
+      <div class="reg-grid">
+
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-36" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">ESRB 등급 취득</span>
+            <span class="reg-tag advisory">권고 (사실상 필수)</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-36','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-36','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-36','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">법적 의무는 아니나 Steam, Xbox, PlayStation 등 주요 플랫폼에서 ESRB 등급을 요구하거나 강력 권장. PC 온라인게임은 ESRB IARC(국제연령등급연합) 자가 심사 활용 가능.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">등급 체계</div>
+                <div class="reg-meta-value">EC / E / E10+ / T / M / AO
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-36', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-36', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">PC 간소 방법</div>
+                <div class="reg-meta-value">IARC 자가 심사 (Steam 등 플랫폼 내 진행)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>Steam 등 플랫폼 등록 시 IARC 또는 ESRB 등급 취득</li>
+              <li>루트박스 포함 시 ESRB '인게임 구매' 디스크립터 표시</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-37" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">COPPA — 아동 온라인 개인정보보호법</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-37','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-37','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-37','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">13세 미만 아동 대상 서비스는 부모 동의 없이 개인정보 수집 금지. FTC가 집행하며 위반 시 건당 최대 약 5만 달러 이상 제재. 게임이 아동을 타겟으로 하지 않더라도 아동 접근 가능성 고려 필요.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">적용 대상</div>
+                <div class="reg-meta-value">미국 내 13세 미만 아동
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-37', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-37', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">집행 기관</div>
+                <div class="reg-meta-value">FTC (연방거래위원회)</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>만 13세 미만 가입 차단 또는 부모 동의 플로우 구현</li>
+              <li>아동 타겟 요소(캐릭터, 색상, 게임플레이 등)가 있을 경우 COPPA 적용 여부 법무 검토</li>
+              <li>행동 타겟 광고 시 아동 데이터 사용 금지 설정</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-38" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">루트박스 규제 — NY州 Valve 소송 등 급변 중</span>
+            <span class="reg-tag watch">모니터링</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-38','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-38','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-38','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">2026년 2월 뉴욕주 검찰총장 Letitia James가 Valve Corporation을 상대로 뉴욕주 대법원에 소송 제기. Counter-Strike 2·Dota 2·Team Fortress 2의 루트박스가 불법 도박에 해당한다는 주장. 기존 민사 소비자보호법이 아닌 <strong>뉴욕주 헌법 및 형법(도박 조장 1·2급)</strong>을 근거로 한 전례 없는 접근. 루트박스 중단 명령·수익 전액 환수·3배 징벌적 손해배상 청구. 가장 희귀한 아이템 당첨 확률 0.26%, 일부 스킨은 2차 시장에서 100만 달러 이상 거래됨. CS 스킨 시장 규모는 2025년 3월 기준 43억 달러 돌파. 판결 결과에 따라 미국 전역 및 글로벌 루트박스 규제 판도에 직접적 영향 예상.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">소송 제기일</div>
+                <div class="reg-meta-value">2026년 2월 25일
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-38', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-38', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">법적 근거</div>
+                <div class="reg-meta-value">뉴욕주 헌법 + 형법 §225.05·225.10 (도박 조장)</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">청구 내용</div>
+                <div class="reg-meta-value">루트박스 중단 명령 + 수익 환수 + 3배 징벌적 손해배상</div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">특이점</div>
+                <div class="reg-meta-value">형사 도박법 근거 — 미국 내 동종 첫 사례</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>루트박스 포함 시 미성년자(16세 미만) 구매에 부모 동의 기능 선제적 적용</li>
+              <li>확률 정보 자율 공개 및 인게임 표시 (소송 리스크 경감)</li>
+              <li>아이템의 현금 환전 가능 구조 여부 법무팀 검토 — 핵심 쟁점</li>
+              <li>뉴욕주 Valve 소송 결과 및 주별 입법 동향 분기별 모니터링</li>
+            </ul>
+            <div class="ref-label">📎 참고 자료</div>
+            <div class="ref-links">
+              <a class="ref-link" href="https://ag.ny.gov/press-release/2026/attorney-general-james-sues-game-developer-promoting-illegal-gambling-through" target="_blank" rel="noopener">
+                📋 뉴욕주 검찰총장실 공식 보도자료
+              </a>
+              <a class="ref-link" href="https://www.joneswalker.com/en/insights/blogs/perspectives/new-york-targets-valves-loot-boxes-illegal-gambling" target="_blank" rel="noopener">
+                ⚖️ Jones Walker — 소송 법률 분석 (2026.02.27)
+              </a>
+              <a class="ref-link" href="https://www.geekwire.com/2026/valve-software-sued-by-new-york-ag-accused-of-promoting-illegal-gambling-via-video-game-loot-boxes/" target="_blank" rel="noopener">
+                📰 GeekWire — 소송 상세 보도 (2026.02.25)
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-39" onclick="toggleCard(this)">
+            <span class="reg-severity INFO"></span>
+            <span class="reg-title">캐나다 — PIPEDA 및 퀘벡 법 25</span>
+            <span class="reg-tag mandatory">법적 의무</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-39','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-39','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-39','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">캐나다 연방 PIPEDA 및 퀘벡 법 25(2023 시행)는 GDPR에 근접한 개인정보 보호 체계. 퀘벡은 특히 강력한 개인정보 규정 적용. 개인정보 침해 시 72시간 내 신고 의무.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>캐나다 이용자 개인정보 처리방침 PIPEDA 요건 충족</li>
+              <li>퀘벡 이용자 대상 프랑스어 개인정보 처리방침 제공 검토</li>
+              <li>개인정보 침해 발생 시 보고 절차 수립</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-39', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-39', event)">삭제</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+      <div class="divider"></div>
+      <div class="page-title" style="margin-bottom:16px;">🚨 사회문화적 리스크 — 북미·서구권 공통 이슈</div>
+
+      <div class="reg-grid">
+        <div class="reg-card open">
+          <div class="reg-card-header" data-cid="reg-40" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">DEI(다양성·형평·포용) 요소 — 안티 DEI 백래시</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-40','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-40','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-40','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">여성·유색인종·LGBTQ+ 캐릭터 포용, 역사적 다양성 반영 등 DEI 요소를 적용한 게임이 '안티 DEI' 유저 집단의 조직적 불매·평점 공격을 받는 사례 증가. AC Shadows(흑인 사무라이 야스케), Concord(Bungie 출시 후 단 2주 만에 서비스 종료), Dustborn 등이 대표적. Black Myth: Wukong은 DEI 가이드 계약을 거절하며 역으로 안티-DEI 진영의 지지를 받아 흥행. 서구 퍼블리셔와 아시아 개발사 간 DEI 기준 충돌이 발생하기도 함.</p>
+            <div class="reg-meta-grid">
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">백래시 트리거</div>
+                <div class="reg-meta-value">캐릭터 다양성, 성별 선택 확장, 역사 재해석, 체형 표현 변화
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-40', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-40', event)">삭제</button></div>
+          </div>
+              </div>
+              <div class="reg-meta-item">
+                <div class="reg-meta-label">반대 리스크</div>
+                <div class="reg-meta-value">DEI 부재 시 서구 미디어·투자자 비판, 스토어 추천 알고리즘 불이익 가능성</div>
+              </div>
+            </div>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>DEI 요소 도입 시 북미·유럽 시장 vs 한국·일본·중국 시장 반응 시뮬레이션 선행</li>
+              <li>캐릭터 다양성 결정은 마케팅·법무·지역 커뮤니티 팀 공동 검토</li>
+              <li>글로벌 버전과 아시아 버전 캐릭터 외형 차이 발생 시 사전 공지 전략 수립</li>
+              <li>서구 퍼블리셔 계약 시 DEI 가이드라인 준수 조항 범위 명확히 협의</li>
+            </ul>
+            <div class="ref-label">📎 참고 사례</div>
+            <div class="ref-links">
+              <a class="ref-link" href="https://namu.wiki/w/%EC%96%B4%EC%8C%94%EC%8B%A0%20%ED%81%AC%EB%A6%AC%EB%93%9C:%20%EC%84%80%EB%8F%84%EC%9A%B0%EC%8A%A4/%EB%85%BC%EB%9E%80%20%EB%B0%8F%20%EC%82%AC%EA%B1%B4%20%EC%82%AC%EA%B3%A0" target="_blank" rel="noopener">
+                <span class="ref-link-icon">📖</span> 나무위키 — AC Shadows 논란 (DEI·역사재해석 이중 백래시)
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-card">
+          <div class="reg-card-header" data-cid="reg-41" onclick="toggleCard(this)">
+            <span class="reg-severity MED"></span>
+            <span class="reg-title">인종·민족 표현 — 스테레오타입·문화 전용 논란</span>
+            <span class="reg-tag watch">커뮤니티 리스크</span>
+            <div class="check-btns" onclick="event.stopPropagation()"><button class="chk-btn applicable" onclick="setCheck('reg-41','applicable')">해당 없음</button><button class="chk-btn review" onclick="setCheck('reg-41','review')">검토 필요</button><button class="chk-btn done" onclick="setCheck('reg-41','done')">완료</button></div><span class="reg-toggle">▼</span>
+          </div>
+          <div class="reg-body">
+            <p class="reg-desc">특정 민족·인종을 고정관념적으로 묘사하거나, 다른 문화의 신성한 요소를 게임 아이템·배경으로 가볍게 사용(문화 전용)할 경우 소셜미디어 비판과 언론 보도로 이어짐. Resident Evil 5(아프리카 배경 인종 묘사), GTA 시리즈(특정 집단 묘사) 등 사례 다수.</p>
+            <div class="action-header">필요 대응 액션</div>
+            <ul class="action-list">
+              <li>실제 문화·종교 요소를 게임화할 경우 해당 커뮤니티 대표 자문 확보</li>
+              <li>NPC 적군 설정에 특정 현실 민족·국가 직접 연결 지양</li>
+              <li>게임 내 전통 의상·언어·신화 요소 사용 시 원출처 표기 및 존중 방식 검토</li>
+            </ul>
+          
+            <div class="card-edit-bar"><button class="card-edit-btn" onclick="editBuiltinCard('reg-41', event)">수정</button><button class="card-del-btn" onclick="deleteBuiltinCard('reg-41', event)">삭제</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ucards-page-na-regulation" class="reg-grid" style="margin-top:0;"></div>
+      <div id="ucards-page-na-social" class="reg-grid" style="margin-top:0;"></div>
+      <button class="add-card-btn" onclick="openAddModal('page-na')">
+        ＋ 새 규제 / 이슈 항목 추가
+      </button>
+
+    </div>
+
+  </main>
+</div>
+
+<footer style="background:#2c3e6b; color:rgba(255,255,255,0.7); font-size:12px; padding:20px 32px; display:flex; align-items:center; justify-content:space-between; border-top:3px solid var(--accent);">
+  <div>
+    <strong style="color:#fff; font-size:13px;">글로벌 게임 규제 데이터베이스</strong>&nbsp;&nbsp;
+    PC 온라인게임 기준 · 2026년 7월 업데이트 · v2.3
+  </div>
+  <div style="color:rgba(255,255,255,0.5); font-size:11px;">
+    본 자료는 참고용이며 법적 효력이 없습니다. 규제 변경사항은 반드시 법무팀과 확인하세요.
+  </div>
+</footer>
+
+<!-- 항목추가 모달 -->
+<div id="addModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+    <div style="font-size:17px;font-weight:700;color:#1a1f2e;margin-bottom:4px;">새 규제 / 이슈 항목 추가</div>
+    <div id="modal-sub" style="font-size:12px;color:#8b96b0;margin-bottom:18px;"></div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">지역 *</label>
+      <select id="m-region" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;" onchange="onRegionChange()">
+        <option value="page-kr">🇰🇷 한국</option>
+        <option value="page-cn">🇨🇳 중국</option>
+        <option value="page-jp">🇯🇵 일본</option>
+        <option value="page-sea">🌏 동남아</option>
+        <option value="page-eu">🇪🇺 유럽 (EU/UK)</option>
+        <option value="page-na">🇺🇸 북미 (US/CA)</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">카테고리 *</label>
+      <select id="m-cat" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;"></select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">제목 *</label>
+      <input id="m-title" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;" placeholder="규제명 또는 이슈명">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">리스크 레벨</label>
+      <select id="m-risk" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;">
+        <option value="HIGH">🔴 HIGH — 즉시 대응 필요</option>
+        <option value="MED" selected>🟡 MED — 세부 대응 필요</option>
+        <option value="LOW">🟢 LOW — 모니터링</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">태그</label>
+      <select id="m-tag" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;">
+        <option value="mandatory">법적 의무</option>
+        <option value="advisory" selected>권고/모니터링</option>
+        <option value="watch">주의</option>
+        <option value="new">신규</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">내용 *</label>
+      <textarea id="m-desc" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;min-height:80px;resize:vertical;box-sizing:border-box;" placeholder="규제 배경, 핵심 내용, 제재 등"></textarea>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">대응 액션 (한 줄에 하나씩)</label>
+      <textarea id="m-actions" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;min-height:60px;resize:vertical;box-sizing:border-box;" placeholder="예: 법무팀 검토 필요"></textarea>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:#4b5675;text-transform:uppercase;margin-bottom:5px;">참고 링크 (선택)</label>
+      <input id="m-link" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;margin-bottom:6px;" placeholder="https://...">
+      <input id="m-link-label" style="width:100%;padding:8px 12px;border:1px solid #dde1e8;border-radius:6px;font-family:inherit;font-size:13px;background:#f8f9fb;box-sizing:border-box;" placeholder="링크 이름">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid #eef0f4;">
+      <button onclick="closeModal()" style="padding:8px 18px;border:1px solid #dde1e8;border-radius:6px;background:#f8f9fb;color:#4b5675;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">취소</button>
+      <button onclick="submitCard()" style="padding:8px 20px;border:none;border-radius:6px;background:#1756c8;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">추가하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _modalPage = '', _editId = null;
+var _checks = {}, _ucards = {}, _edits = {};
+var _STORE = 'grdb-checks-v1', _USTORE = 'grdb-ucards-v1', _ESTORE = 'grdb-edits-v1';
+try { _checks = JSON.parse(localStorage.getItem(_STORE) || '{}'); } catch(e) {}
+try { _ucards = JSON.parse(localStorage.getItem(_USTORE) || '{}'); } catch(e) {}
+try { _edits = JSON.parse(localStorage.getItem(_ESTORE) || '{}'); } catch(e) {}
+function _sc() { try { localStorage.setItem(_STORE, JSON.stringify(_checks)); } catch(e) {} }
+function _su() { try { localStorage.setItem(_USTORE, JSON.stringify(_ucards)); } catch(e) {} }
+function _se() { try { localStorage.setItem(_ESTORE, JSON.stringify(_edits)); } catch(e) {} }
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.region-btn, .sidebar-planner-btn').forEach(function(b){ b.classList.remove('active'); });
+  var p = document.getElementById('page-' + id);
+  if (p) p.classList.add('active');
+  document.querySelectorAll('.region-btn, .sidebar-planner-btn').forEach(function(b){
+    if ((b.getAttribute('onclick')||'').indexOf("'"+id+"'") > -1) b.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+function toggleCard(h) { h.parentElement.classList.toggle('open'); }
+
+function handleSearch(q) {
+  var clr = document.getElementById('searchClear');
+  if (clr) clr.style.display = q ? 'block' : 'none';
+  if (!q.trim()) { showPage('overview'); return; }
+  var kw = q.toLowerCase();
+  var hits = [];
+  document.querySelectorAll('[data-cid]').forEach(function(h){
+    var t = (h.querySelector('.reg-title')||{}).textContent || '';
+    if (t.toLowerCase().indexOf(kw) > -1) {
+      var page = h.closest('.page');
+      hits.push({ title: t, pid: page ? page.id.replace('page-','') : '' });
+    }
+  });
+  var hl = document.getElementById('searchHeadline');
+  var meta = document.getElementById('searchMeta');
+  var res = document.getElementById('searchResults');
+  if (hl) hl.textContent = '"' + q + '" 검색 결과';
+  if (meta) meta.innerHTML = '총 <span>' + hits.length + '건</span>';
+  if (res) res.innerHTML = hits.map(function(h){
+    return '<div class="reg-card" onclick="showPage(\''+h.pid+'\')" style="cursor:pointer;margin-bottom:8px;"><div class="reg-card-header"><span class="reg-title">'+h.title+'</span></div></div>';
+  }).join('') || '<div style="padding:40px;text-align:center;color:#8b96b0;">결과 없음</div>';
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.region-btn,.sidebar-planner-btn').forEach(function(b){ b.classList.remove('active'); });
+  var sp = document.getElementById('page-search'); if (sp) sp.classList.add('active');
+}
+
+function clearSearch() {
+  var i = document.getElementById('globalSearch'); if(i) i.value='';
+  var c = document.getElementById('searchClear'); if(c) c.style.display='none';
+  showPage('overview');
+}
+
+var _af = null;
+function filterOverview(btn) {
+  var f = btn.dataset.filter;
+  var map = { HIGH:['kr','cn','sea','eu'], MED:['jp','na'], LOW:['na'],
+    '\ub8e8\ud2b8\ubc15\uc2a4':['kr','cn','jp','eu','na'], '\ubbf8\uc131\ub144\uc790':['kr','cn','sea','eu','na'],
+    '\uac1c\uc778\uc815\ubcf4':['kr','cn','jp','eu','na'], '\uc0ac\ud68c\ubb38\ud654':['kr','cn','jp','sea','eu','na'],
+    '\ub4f1\uae09\ubd84\ub958':['kr','jp','sea','eu','na'] };
+  if (_af === f) {
+    _af = null;
+    document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+    document.querySelectorAll('#overviewTable tbody tr').forEach(function(r){ r.style.display=''; });
+  } else {
+    _af = f;
+    document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+    btn.classList.add('active');
+    var allowed = map[f] || [];
+    document.querySelectorAll('#overviewTable tbody tr').forEach(function(r){
+      var oc = r.getAttribute('onclick') || '';
+      r.style.display = allowed.some(function(k){ return oc.indexOf("'"+k+"'") > -1; }) ? '' : 'none';
+    });
+  }
+}
+
+var _pSel = { c: {}, f: {} };
+function plannerToggle(el, type) {
+  var key = el.dataset[type];
+  if (_pSel[type][key]) { delete _pSel[type][key]; el.classList.remove('on'); }
+  else { _pSel[type][key] = true; el.classList.add('on'); }
+}
+
+function setCheck(cid, status) {
+  if (_checks[cid] === status) delete _checks[cid]; else _checks[cid] = status;
+  _sc(); applyCheckUI(cid, _checks[cid] || null); updateProgress();
+}
+
+function applyCheckUI(cid, status) {
+  var header = document.querySelector('[data-cid="'+cid+'"]');
+  if (!header) return;
+  var card = header.closest('.reg-card');
+  if (!card) return;
+  card.classList.remove('status-applicable','status-review','status-done');
+  header.querySelectorAll('.chk-btn').forEach(function(b){ b.classList.remove('selected'); });
+  var badge = header.querySelector('.status-badge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'status-badge';
+    var toggle = header.querySelector('.reg-toggle');
+    if (toggle) header.insertBefore(badge, toggle); else header.appendChild(badge);
+  }
+  badge.className = 'status-badge'; badge.textContent = '';
+  if (status === 'applicable') {
+    card.classList.add('status-applicable');
+    var b = header.querySelector('.chk-btn.applicable'); if(b) b.classList.add('selected');
+    badge.classList.add('applicable'); badge.textContent = '해당없음';
+  } else if (status === 'review') {
+    card.classList.add('status-review');
+    var b = header.querySelector('.chk-btn.review'); if(b) b.classList.add('selected');
+    badge.classList.add('review'); badge.textContent = '검토필요';
+  } else if (status === 'done') {
+    card.classList.add('status-done');
+    var b = header.querySelector('.chk-btn.done'); if(b) b.classList.add('selected');
+    badge.classList.add('done'); badge.textContent = '완료';
+  }
+}
+
+function updateProgress() {
+  var total = document.querySelectorAll('[data-cid]').length;
+  var done=0, review=0, applicable=0;
+  Object.keys(_checks).forEach(function(k){
+    if(_checks[k]==='done') done++;
+    else if(_checks[k]==='review') review++;
+    else if(_checks[k]==='applicable') applicable++;
+  });
+  var unchecked = total - done - review - applicable;
+  var pct = total ? Math.round(done/total*100) : 0;
+  function sw(id,v){ var e=document.getElementById(id); if(e) e.style.width=v+'%'; }
+  function st(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+  sw('prog-done', total?(done/total*100).toFixed(1):0);
+  sw('prog-review', total?(review/total*100).toFixed(1):0);
+  sw('prog-applicable', total?(applicable/total*100).toFixed(1):0);
+  st('cnt-done',done); st('cnt-review',review);
+  st('cnt-applicable',applicable); st('cnt-unchecked',unchecked);
+  st('prog-pct', pct+'% 완료');
+}
+
+var _CATS = {
+  'page-kr':  [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}],
+  'page-cn':  [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}],
+  'page-jp':  [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}],
+  'page-sea': [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}],
+  'page-eu':  [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}],
+  'page-na':  [{id:'regulation',label:'📋 법적 규제'},{id:'social',label:'🚨 사회문화'}]
+};
+var _RN = {'page-kr':'🇰🇷 한국','page-cn':'🇨🇳 중국','page-jp':'🇯🇵 일본','page-sea':'🌏 동남아','page-eu':'🇪🇺 유럽','page-na':'🇺🇸 북미'};
+
+function onRegionChange() {
+  var pid = document.getElementById('m-region').value;
+  var cats = _CATS[pid] || [];
+  var cs = document.getElementById('m-cat');
+  cs.innerHTML = cats.map(function(c){ return '<option value="'+c.id+'">'+c.label+'</option>'; }).join('');
+}
+
+function openAddModal(pageId, editId) {
+  _modalPage = pageId; _editId = editId || null;
+  // 지역 드롭다운 설정
+  var rs = document.getElementById('m-region');
+  rs.value = pageId;
+  document.getElementById('modal-sub').textContent = editId ? '항목 수정' : '';
+  // 카테고리 초기화
+  onRegionChange();
+  if (editId) {
+    var pd = _ucards[pageId] || {}; var card = null;
+    Object.keys(pd).forEach(function(cat){ (pd[cat]||[]).forEach(function(c){ if(c.id===editId) card=c; }); });
+    if (card) {
+      rs.value = pageId;
+      onRegionChange();
+      document.getElementById('m-cat').value = card.category || 'regulation';
+      document.getElementById('m-title').value = card.title || '';
+      document.getElementById('m-risk').value = card.risk || 'MED';
+      document.getElementById('m-tag').value = card.tag || 'advisory';
+      document.getElementById('m-desc').value = card.desc || '';
+      document.getElementById('m-actions').value = (card.actions||[]).join('\n');
+      document.getElementById('m-link').value = card.link || '';
+      document.getElementById('m-link-label').value = card.linkLabel || '';
+    }
+  } else {
+    ['m-title','m-desc','m-actions','m-link','m-link-label'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('m-risk').value='MED'; document.getElementById('m-tag').value='advisory';
+  }
+  document.getElementById('addModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('m-title').focus(); }, 80);
+}
+
+function closeModal() { document.getElementById('addModal').style.display='none'; _editId=null; }
+
+function submitCard() {
+  var title = document.getElementById('m-title').value.trim();
+  var desc = document.getElementById('m-desc').value.trim();
+  if (!title || !desc) { alert('제목과 내용은 필수예요.'); return; }
+  var targetPage = document.getElementById('m-region').value;
+  var cat = document.getElementById('m-cat').value;
+  var risk = document.getElementById('m-risk').value;
+  var tag = document.getElementById('m-tag').value;
+  var actions = document.getElementById('m-actions').value.trim().split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+  var link = document.getElementById('m-link').value.trim();
+  var linkLabel = document.getElementById('m-link-label').value.trim() || '참고 링크';
+  var now = new Date().toLocaleString('ko-KR');
+
+  // 기존 내장 카드 수정인 경우
+  if (_editId && _editId.indexOf('__builtin__') === 0) {
+    var cid = _editId.replace('__builtin__', '');
+    if (!_edits[cid]) _edits[cid] = {};
+    _edits[cid].data = { title:title, risk:risk, tag:tag, desc:desc, actions:actions, link:link, linkLabel:linkLabel, updatedAt:now };
+    _se();
+    applyEditToCard(cid, _edits[cid].data);
+    closeModal();
+    return;
+  }
+  if (!_ucards[targetPage][cat]) _ucards[targetPage][cat] = [];
+  if (_editId) {
+    // 기존 위치에서 찾아서 새 위치로 이동
+    Object.keys(_ucards).forEach(function(pid){
+      Object.keys(_ucards[pid]||{}).forEach(function(c){
+        var arr = _ucards[pid][c]||[];
+        var idx = -1;
+        arr.forEach(function(x,i){ if(x.id===_editId) idx=i; });
+        if (idx > -1) {
+          var old = arr.splice(idx,1)[0];
+          if (!_ucards[targetPage][cat]) _ucards[targetPage][cat]=[];
+          var merged = {};
+          Object.keys(old).forEach(function(k){ merged[k]=old[k]; });
+          merged.category=cat; merged.title=title; merged.risk=risk; merged.tag=tag;
+          merged.desc=desc; merged.actions=actions; merged.link=link; merged.linkLabel=linkLabel; merged.updatedAt=now;
+          _ucards[targetPage][cat].push(merged);
+        }
+      });
+    });
+  } else {
+    _ucards[targetPage][cat].push({id:'uc'+Date.now(),category:cat,title:title,risk:risk,tag:tag,desc:desc,actions:actions,link:link,linkLabel:linkLabel,createdAt:now});
+  }
+  _su(); closeModal();
+  // 지역이 바뀌었을 수 있으므로 두 페이지 모두 렌더링
+  renderUcards(targetPage);
+  if (_modalPage !== targetPage) renderUcards(_modalPage);
+  updateProgress();
+  // 추가된 지역으로 페이지 이동
+  showPage(targetPage.replace('page-',''));
+}
+
+function deleteUcard(pageId, cardId) {
+  if (!confirm('삭제할까요?')) return;
+  if (_ucards[pageId]) Object.keys(_ucards[pageId]).forEach(function(c){ _ucards[pageId][c]=(_ucards[pageId][c]||[]).filter(function(x){ return x.id!==cardId; }); });
+  delete _checks[cardId]; _su(); _sc(); renderUcards(pageId); updateProgress();
+}
+
+function renderUcards(pageId) {
+  var pd = _ucards[pageId] || {};
+  var cats = _CATS[pageId] || [];
+  cats.forEach(function(cat){
+    var el = document.getElementById('ucards-'+pageId+'-'+cat.id);
+    if (!el) return;
+    var cards = pd[cat.id] || [];
+    if (!cards.length) { el.innerHTML=''; return; }
+    var tl = {mandatory:'법적 의무',advisory:'권고',watch:'주의',new:'신규'};
+    el.innerHTML = '<div style="font-size:11px;font-weight:700;color:#1756c8;letter-spacing:1px;text-transform:uppercase;padding:8px 0 10px;border-bottom:2px solid #e8edf8;margin-bottom:8px;">'+cat.label+' — 직접 추가</div>' +
+      cards.map(function(c){
+        var cid=c.id;
+        var aH=c.actions&&c.actions.length?'<div class="action-header">대응 액션</div><ul class="action-list">'+c.actions.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul>':'';
+        var lH=c.link?'<div class="ref-label" style="margin-top:10px;">📎 참고</div><div class="ref-links"><a class="ref-link" href="'+c.link+'" target="_blank">🔗 '+(c.linkLabel||'링크')+'</a></div>':'';
+        var ts=c.updatedAt?'수정 '+c.updatedAt:'등록 '+(c.createdAt||'');
+        return '<div class="reg-card" id="uc-'+cid+'">'+
+          '<div class="reg-card-header" data-cid="'+cid+'" onclick="toggleCard(this)">'+
+          '<span class="reg-severity '+c.risk+'"></span>'+
+          '<span class="reg-title">'+c.title+'</span>'+
+          '<span class="reg-tag '+(c.tag||'advisory')+'">'+(tl[c.tag]||c.tag)+'</span>'+
+          '<span class="user-card-badge">직접추가</span>'+
+          '<div class="check-btns" onclick="event.stopPropagation()">'+
+          '<button class="chk-btn applicable" onclick="setCheck(\''+cid+'\',\'applicable\')">해당없음</button>'+
+          '<button class="chk-btn review" onclick="setCheck(\''+cid+'\',\'review\')">검토필요</button>'+
+          '<button class="chk-btn done" onclick="setCheck(\''+cid+'\',\'done\')">완료</button>'+
+          '</div><span class="reg-toggle">▼</span></div>'+
+          '<div class="reg-body"><p class="reg-desc">'+c.desc+'</p>'+aH+lH+
+          '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #eef0f4;display:flex;align-items:center;justify-content:space-between;">'+
+          '<span style="font-size:11px;color:#8b96b0;">📅 '+ts+'</span>'+
+          '<div style="display:flex;gap:6px;">'+
+          '<button onclick="openAddModal(\''+pageId+'\',\''+cid+'\')" style="padding:3px 10px;font-size:11px;border-radius:3px;border:1px solid #dde1e8;background:#f8f9fb;color:#4b5675;cursor:pointer;font-family:inherit;">수정</button>'+
+          '<button onclick="deleteUcard(\''+pageId+'\',\''+cid+'\')" style="padding:3px 10px;font-size:11px;border-radius:3px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;cursor:pointer;font-family:inherit;">삭제</button>'+
+          '</div></div></div></div>';
+      }).join('');
+    Object.keys(_checks).forEach(function(cid){ applyCheckUI(cid,_checks[cid]||null); });
+  });
+}
+
+function init() {
+  document.querySelectorAll('[data-cid]').forEach(function(h){
+    if (_checks[h.dataset.cid]) applyCheckUI(h.dataset.cid, _checks[h.dataset.cid]);
+  });
+  Object.keys(_ucards).forEach(function(pid){ renderUcards(pid); });
+  // 기존 카드 수정 내용 복원
+  applyEdits();
+  // 기존 카드 삭제 상태 복원
+  applyDeletes();
+  updateProgress();
+}
+
+// 기존 카드 삭제
+function deleteBuiltinCard(cid, event) {
+  event.stopPropagation();
+  if (!confirm('이 항목을 숨길까요? (새로고침 후에도 유지됩니다)')) return;
+  if (!_edits[cid]) _edits[cid] = {};
+  _edits[cid].deleted = true;
+  _se();
+  var card = document.querySelector('[data-cid="' + cid + '"]');
+  if (card) card.closest('.reg-card').classList.add('card-hidden');
+  updateProgress();
+}
+
+// 기존 카드 수정 — 모달 열어서 현재 내용 채우기
+function editBuiltinCard(cid, event) {
+  event.stopPropagation();
+  var header = document.querySelector('[data-cid="' + cid + '"]');
+  if (!header) return;
+  var card = header.closest('.reg-card');
+  var page = header.closest('.page');
+  var pageId = page ? page.id : 'page-kr';
+
+  // 현재 내용 추출
+  var title = (header.querySelector('.reg-title') || {}).textContent || '';
+  var riskEl = header.querySelector('.reg-severity');
+  var risk = 'MED';
+  if (riskEl) {
+    if (riskEl.classList.contains('HIGH')) risk = 'HIGH';
+    else if (riskEl.classList.contains('LOW')) risk = 'LOW';
+  }
+  var tagEl = header.querySelector('.reg-tag');
+  var tag = 'advisory';
+  if (tagEl) {
+    var tagClass = tagEl.className.replace('reg-tag','').trim();
+    if (tagClass) tag = tagClass;
+  }
+  var body = card.querySelector('.reg-body');
+  var desc = '';
+  if (body) {
+    var descEl = body.querySelector('.reg-desc');
+    if (descEl) desc = descEl.textContent.trim();
+  }
+  var actions = [];
+  if (body) {
+    body.querySelectorAll('.action-list li').forEach(function(li){ actions.push(li.textContent.trim()); });
+  }
+  var link = '', linkLabel = '';
+  if (body) {
+    var linkEl = body.querySelector('.ref-link');
+    if (linkEl) { link = linkEl.getAttribute('href') || ''; linkLabel = linkEl.textContent.trim().replace('🔗 ',''); }
+  }
+
+  // 수정된 내용이 있으면 그걸로 덮어씀
+  if (_edits[cid] && _edits[cid].data) {
+    var d = _edits[cid].data;
+    title = d.title || title; risk = d.risk || risk; tag = d.tag || tag;
+    desc = d.desc || desc; actions = d.actions || actions;
+    link = d.link || link; linkLabel = d.linkLabel || linkLabel;
+  }
+
+  // 모달 열기
+  _modalPage = pageId; _editId = '__builtin__' + cid;
+  var rs = document.getElementById('m-region');
+  rs.value = pageId;
+  onRegionChange();
+  document.getElementById('modal-sub').textContent = '기존 항목 수정';
+  document.getElementById('m-title').value = title;
+  document.getElementById('m-risk').value = risk;
+  document.getElementById('m-tag').value = tag;
+  document.getElementById('m-desc').value = desc;
+  document.getElementById('m-actions').value = actions.join('\n');
+  document.getElementById('m-link').value = link;
+  document.getElementById('m-link-label').value = linkLabel;
+  document.getElementById('addModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('m-title').focus(); }, 80);
+}
+
+// 수정 내용을 카드에 직접 반영
+function applyEditToCard(cid, data) {
+  var header = document.querySelector('[data-cid="' + cid + '"]');
+  if (!header) return;
+  var card = header.closest('.reg-card');
+  var body = card ? card.querySelector('.reg-body') : null;
+  if (!body) return;
+
+  // 제목 업데이트
+  var titleEl = header.querySelector('.reg-title');
+  if (titleEl && data.title) titleEl.textContent = data.title;
+
+  // 리스크 업데이트
+  var sevEl = header.querySelector('.reg-severity');
+  if (sevEl && data.risk) {
+    sevEl.className = 'reg-severity ' + data.risk;
+  }
+
+  // 태그 업데이트
+  var tagEl = header.querySelector('.reg-tag');
+  var tagLabels = {mandatory:'법적 의무', advisory:'권고/모니터링', watch:'주의', new:'신규'};
+  if (tagEl && data.tag) {
+    tagEl.className = 'reg-tag ' + data.tag;
+    tagEl.textContent = tagLabels[data.tag] || data.tag;
+  }
+
+  // 내용 업데이트
+  var descEl = body.querySelector('.reg-desc');
+  if (descEl && data.desc) descEl.textContent = data.desc;
+
+  // 액션 업데이트
+  if (data.actions) {
+    var existingHeader = body.querySelector('.action-header');
+    var existingList = body.querySelector('.action-list');
+    if (data.actions.length) {
+      var newHtml = '<div class="action-header">필요 대응 액션</div><ul class="action-list">' +
+        data.actions.map(function(a){ return '<li>' + a + '</li>'; }).join('') + '</ul>';
+      if (existingHeader) existingHeader.outerHTML = newHtml;
+      else if (existingList) existingList.outerHTML = newHtml;
+      else if (descEl) descEl.insertAdjacentHTML('afterend', newHtml);
+    }
+  }
+
+  // 수정 표시 배지
+  var editBar = body.querySelector('.card-edit-bar');
+  if (editBar) {
+    var badge = editBar.querySelector('.edit-modified-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'edit-modified-badge';
+      badge.style.cssText = 'font-size:10px;color:#d97706;font-weight:600;margin-right:auto;';
+      badge.textContent = '✏️ 수정됨';
+      editBar.insertBefore(badge, editBar.firstChild);
+    }
+  }
+}
+
+function applyEdits() {
+  Object.keys(_edits).forEach(function(cid) {
+    var e = _edits[cid];
+    if (e.deleted) {
+      var h = document.querySelector('[data-cid="' + cid + '"]');
+      if (h) h.closest('.reg-card').classList.add('card-hidden');
+    } else if (e.data) {
+      applyEditToCard(cid, e.data);
+    }
+  });
+}
+
+function applyDeletes() { /* handled in applyEdits */ }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+setTimeout(init, 100);
+
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
+document.getElementById('addModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+</script>
+</body>
+</html>
